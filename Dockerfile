@@ -1,8 +1,11 @@
 FROM python:3.9-slim
 
-RUN pip install --upgrade pip
-
 RUN pip install pipenv
+
+# Install compilation dependencies
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libpq-dev python3-dev gcc \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY Pipfile Pipfile
@@ -11,6 +14,4 @@ RUN pipenv install --deploy --system --ignore-pipfile
 
 COPY . /app
 
-RUN chmod +x ./entrypoint.sh
-
-ENTRYPOINT [ "./entrypoint.sh" ]
+ENTRYPOINT [ "python3", "-m", "app" ]

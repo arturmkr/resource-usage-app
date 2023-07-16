@@ -2,11 +2,10 @@ version: '3.8'
 
 services:
   app:
-    image: resource_usage_app:latest
-    entrypoint: ./entrypoint.sh
+    image: resource_usage_app_pg:latest
     restart: always
     ports:
-      - "31210:5000"
+      - "10700:10700"
     env_file: .env
     environment:
       - DB_USERNAME=$DB_USERNAME
@@ -19,21 +18,23 @@ services:
         condition: service_healthy
 
   db:
-    image: mysql:8.0.29
+    image: postgres:latest
     restart: always
     ports:
-      - "3306:3306"
+      - '5432:5432'
     env_file: .env
     environment:
-      MYSQL_ROOT_PASSWORD: $DB_PASSWORD
-      MYSQL_DATABASE: $DB_NAME
-      MYSQL_USER: $DB_USERNAME
-      MYSQL_PASSWORD: $DB_PASSWORD
-    healthcheck:
-        test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-        timeout: 20s
-        retries: 10
+      - POSTGRES_USER=$DB_USERNAME
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+      - POSTGRES_DB=$DB_NAME
     volumes:
-      - resource_app_db_data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-d", "db_prod" ]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
 volumes:
-  resource_app_db_data:
+  postgres-data:

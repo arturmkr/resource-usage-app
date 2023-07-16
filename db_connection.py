@@ -1,15 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Define the database connection details
-DB_HOST = 'localhost'
-DB_PORT = 3306
-DB_USER = 'flask'
-DB_PASSWORD = 'flaskpassword'
-DB_NAME = 'resource'
+from config.default import DB_USERNAME, DB_PASSWORD, DB_HOSTNAME, DB_PORT, DB_NAME
 
 # Create the database URL for SQLAlchemy
-db_url = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4'
+db_url = f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/{DB_NAME}"
 
 # Create the SQLAlchemy engine
 engine = create_engine(db_url)

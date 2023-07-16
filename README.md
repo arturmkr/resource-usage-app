@@ -1,0 +1,6 @@
+- [ ] check docker dependencies
+- [ ] id generator
+- [ ] remove useless columns ResourceHistory
+- [ ] snowflake model to pydantic
+- [ ] add auth
+- [ ] add gRPC

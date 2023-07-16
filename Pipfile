@@ -4,15 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "*"
-uvicorn = {extras = ["standard"], version = "*"}
-pydantic = "*"
-sqlalchemy = "*"
-pymysql = "*"
-cryptography = "*"
+fastapi = "==0.99.1"
+uvicorn = { extras = ["standard"], version = "*" }
+pydantic = "==1.10.11"
+sqlalchemy = "==2.0.18"
+cryptography = "==41.0.2"
+psycopg2-binary = "==2.9.6"
+psycopg2 = "==2.9.6"
 
 [dev-packages]
 
 [requires]
 python_version = "3.9"
-python_full_version = "3.9.16"
