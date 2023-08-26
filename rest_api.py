@@ -1,14 +1,17 @@
+import datetime
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException, Query
 
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, Status
-from resource_service import ResourceService
+from models.enums import Status, ResourceOperationType
+from models.filters import ResourceFilter, ResourceHistoryFilter
+from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut
+from resource_service import ResourceService, create_resource_service
 
 app = FastAPI(title="resource-usage-app")
 
-resource_service: ResourceService = ResourceService()
+resource_service: ResourceService = create_resource_service()
 
 
 @app.get("/healthcheck", status_code=200)
@@ -16,13 +19,17 @@ async def healthcheck():
     return "OK"
 
 
-@app.get("/resources", status_code=200)
-def get_resources(status: Optional[Status] = Query(None, description="Filter resources by status"),
-                  tags: list[str] = Query(None)) -> ResourcesOut:
-    return resource_service.get_resources(status, tags)
+@app.get("/resources", status_code=200, response_model=ResourcesOut)
+def get_resources(status: Optional[Status] = Query(None),
+                  tags: Optional[List[str]] = Query(None, description="Comma-separated list of tags"),
+                  ) -> ResourcesOut:
+    if tags:
+        tags = [tag.strip() for tag in tags[0].split(',')]
+    resource_filter = ResourceFilter(status=status, tags=tags)
+    return resource_service.get_resources(resource_filter)
 
 
-@app.post("/resources", status_code=200)
+@app.post("/resources", status_code=200, response_model=ResourceOut)
 def create_resource(resource_in: ResourceIn) -> ResourceOut:
     return resource_service.create_resource(resource_in)
 
@@ -36,7 +43,7 @@ def remove_resource(resource_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/resources/{resource_id}", status_code=200)
+@app.get("/resources/{resource_id}", status_code=200, response_model=ResourceOut)
 def get_resource(resource_id: str) -> ResourceOut:
     try:
         return resource_service.get_resource(resource_id)
@@ -66,12 +73,28 @@ def release_resource(resource_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@app.get("/resources/history", response_model=ResourcesOperationsOut)
+def get_resource_history(resource_id: Optional[str] = None,
+                         operation: Optional[ResourceOperationType] = None,
+                         start_date: Optional[datetime.datetime] = None,
+                         end_date: Optional[datetime.datetime] = None):
+    filters = ResourceHistoryFilter(
+        resource_id=resource_id,
+        operation=operation,
+        start_date=start_date,
+        end_date=end_date
+    )
+    return resource_service.get_resources_history(filters)
+
+
 @app.on_event("shutdown")
 def shutdown_event():
-    resource_service.close_connection()
+    pass
+    # resource_service.close_connection()
 
 
 @app.on_event("startup")
 def startup_event():
+    pass
     # Create tables if they don't exist on application startup
-    resource_service.init_db()
+    # resource_repository.init_db()
