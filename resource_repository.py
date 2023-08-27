@@ -1,14 +1,11 @@
-import uuid
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from config.default import INIT_DB
-from db_connection import session_factory
-from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from models.db_models import Resource, ResourceHistory
-from models.enums import Status, ResourceOperationType
+from db_connection import session_factory, get_engine
+from exceptions import ResourceNotFoundException
+from models.db_models import Resource
 from models.filters import ResourceFilter
-from models.pydantic_models import ResourceOperationOut
 
 
 class ResourceRepository(ABC):
@@ -21,19 +18,15 @@ class ResourceRepository(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def update(self, resource: Resource) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     def remove_resource(self, resource_id: str) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     def get_resource(self, resource_id: str) -> Resource:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def block_resource(self, resource_id: str) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def release_resource(self, resource_id: str) -> None:
         raise NotImplementedError()
 
 
@@ -61,6 +54,18 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
         self.session.refresh(resource)
         return resource
 
+    def update(self, resource: Resource) -> Resource:
+        existing_resource = self.session.query(Resource).filter_by(id=resource.id).first()
+
+        if not existing_resource:
+            raise ResourceNotFoundException(str(resource.id))
+
+        for key, value in resource.to_dict().items():
+            setattr(existing_resource, key, value)
+
+        self.session.commit()
+        return existing_resource
+
     def remove_resource(self, resource_id: str):
         existing_resource = self.session.query(Resource).filter_by(id=resource_id).first()
         if existing_resource:
@@ -76,43 +81,12 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
         else:
             raise ResourceNotFoundException(resource_id)
 
-    def block_resource(self, resource_id: str) -> None:
-        resource = self.session.query(Resource).filter_by(id=str(resource_id)).first()
-        if resource:
-            if resource.status == Status.FREE:
-                resource.status = Status.BLOCKED
-
-                resource_operation = ResourceOperationOut(id=uuid.uuid4(),
-                                                          resource_id=uuid.UUID(resource_id),
-                                                          operation=ResourceOperationType.BLOCK)
-                self.session.add(ResourceHistory(**resource_operation.dict()))
-                self.session.commit()
-            else:
-                raise ResourceBlockException(str(resource_id))
-        else:
-            raise ResourceNotFoundException(str(resource_id))
-
-    def release_resource(self, resource_id: str) -> None:
-        resource = self.session.query(Resource).filter_by(id=resource_id).first()
-        if resource:
-            if resource.status == Status.BLOCKED:
-                resource.status = Status.FREE
-                resource_operation = ResourceOperationOut(id=uuid.uuid4(),
-                                                          resource_id=uuid.UUID(resource_id),
-                                                          operation=ResourceOperationType.RELEASE)
-                self.session.add(ResourceHistory(**resource_operation.dict()))
-                self.session.commit()
-            else:
-                raise ResourceReleaseException(str(resource_id))
-        else:
-            raise ResourceNotFoundException(str(resource_id))
-
     def close_connection(self):
         self.session.close()
 
     def init_db(self):
         if INIT_DB:
-            Resource.__table__.create(bind=engine, checkfirst=True)
+            Resource.__table__.create(bind=get_engine(), checkfirst=True)
 
 
 def create_resource_repository() -> ResourceRepository:

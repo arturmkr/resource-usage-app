@@ -100,35 +100,3 @@ class PgResourceService:
 
 
 ==============================================
-Creation of ResourceHistory:
-
-history_entry = ResourceHistory(
-    resource_id=resource_id,
-    operation=ResourceOperationType.BLOCK,
-    description=f"Resource {resource_id} was blocked."
-)
-
-==============================================
-Separation of Business Logic and Database Operations:
-
-# resource_service.py
-def block_resource(self, resource_id: UUID) -> None:
-    resource = self.resource_repository.get_resource_by_id(resource_id)
-    
-    # Business Logic to check if the resource can be blocked
-    if not resource:
-        raise ResourceNotFoundException(resource_id)
-    if resource.status != ResourceStatus.AVAILABLE:
-        raise ResourceBlockException(resource_id)
-    
-    resource.status = ResourceStatus.BLOCKED
-    self.resource_repository.update(resource)
-    
-    # Now, add an entry in the history
-    history_entry = ResourceHistory(
-        resource_id=resource_id,
-        operation=ResourceOperationType.BLOCK,
-        description=f"Resource {resource_id} was blocked."
-    )
-    self.resource_history_repository.add(history_entry)
-==============================================

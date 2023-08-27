@@ -11,6 +11,10 @@ class ResourceHistoryRepository(ABC):
     def get_history(self, filters: ResourceHistoryFilter) -> List[ResourceHistory]:
         raise NotImplementedError()
 
+    @abstractmethod
+    def add(self, history_entry: ResourceHistory) -> None:
+        raise NotImplementedError()
+
 
 class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
     def __init__(self) -> None:
@@ -32,6 +36,12 @@ class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
             query = query.filter(ResourceHistory.created_at <= filters.end_date)
 
         return query.all()
+
+    def add(self, history_entry: ResourceHistory) -> ResourceHistory:
+        self.session.add(history_entry)
+        self.session.commit()
+        self.session.refresh(history_entry)
+        return history_entry
 
 
 def create_resource_history_repository() -> ResourceHistoryRepository:

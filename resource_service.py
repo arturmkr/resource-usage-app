@@ -3,7 +3,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
 
-from models.db_models import Resource
+from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
+from models.db_models import Resource, ResourceHistory
+from models.enums import Status, ResourceOperationType
 from models.filters import ResourceFilter, ResourceHistoryFilter
 from models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut
 from resource_history_repository import create_resource_history_repository, ResourceHistoryRepository
@@ -72,14 +74,45 @@ class PgResourceService(ResourceService):
         return ResourceOut(**resource_db.to_dict())
 
     def block_resource(self, resource_id: str) -> None:
-        self.resource_repository.block_resource(resource_id)
+        resource = self.resource_repository.get_resource(resource_id)
+
+        if not resource:
+            raise ResourceNotFoundException(resource_id)
+        if resource.status != Status.FREE:
+            raise ResourceBlockException(resource_id)
+
+        resource.status = Status.BLOCKED
+        self.resource_repository.update(resource)
+
+        history_entry = ResourceOperationOut(id=uuid.uuid4(),
+                                             resource_id=uuid.UUID(resource_id),
+                                             operation=ResourceOperationType.BLOCK)
+
+        resource_history_db_to_save = ResourceHistory(**history_entry.dict())
+        self.resource_history_repository.add(resource_history_db_to_save)
 
     def release_resource(self, resource_id: str) -> None:
-        self.resource_repository.release_resource(resource_id)
+        resource = self.resource_repository.get_resource(resource_id)
+
+        if not resource:
+            raise ResourceNotFoundException(resource_id)
+        if resource.status != Status.BLOCKED:
+            raise ResourceReleaseException(resource_id)
+
+        resource.status = Status.FREE
+        self.resource_repository.update(resource)
+
+        history_entry = ResourceOperationOut(id=uuid.uuid4(),
+                                             resource_id=uuid.UUID(resource_id),
+                                             operation=ResourceOperationType.RELEASE)
+
+        resource_history_db_to_save = ResourceHistory(**history_entry.dict())
+        self.resource_history_repository.add(resource_history_db_to_save)
 
     def get_resources_history(self, filters: ResourceHistoryFilter) -> ResourcesOperationsOut:
         resources_history = self.resource_history_repository.get_history(filters)
-        resource_history_out = [ResourceOperationOut(**history_record.to_dict()) for history_record in resources_history]
+        resource_history_out = [ResourceOperationOut(**history_record.to_dict()) for history_record in
+                                resources_history]
         return ResourcesOperationsOut(records_count=len(resource_history_out), history_records=resource_history_out)
 
 
