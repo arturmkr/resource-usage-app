@@ -20,8 +20,8 @@ class ResourceOut(ResourceIn):
 
 
 class ResourcesOut(BaseModel):
-    resources_count: int
-    resources: list[ResourceOut]
+    filtered_count: int
+    items: list[ResourceOut]
 
 
 class ResourceOperationOut(BaseModel):
@@ -33,5 +33,5 @@ class ResourceOperationOut(BaseModel):
 
 
 class ResourcesOperationsOut(BaseModel):
-    records_count: int
-    history_records: list[ResourceOperationOut]
+    filtered_count: int
+    items: list[ResourceOperationOut]

@@ -6,7 +6,7 @@ from typing import Optional
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
 from models.db_models import Resource, ResourceHistory
 from models.enums import Status, ResourceOperationType
-from models.filters import ResourceFilter, ResourceHistoryFilter
+from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
 from models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut
 from resource_history_repository import create_resource_history_repository, ResourceHistoryRepository
 from resource_repository import ResourceRepository, create_resource_repository
@@ -15,7 +15,7 @@ from resource_repository import ResourceRepository, create_resource_repository
 class ResourceService(ABC):
 
     @abstractmethod
-    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> ResourcesOut:
+    def get_resources(self, resource_filter: Optional[ResourceFilter], pagination: PaginationParams) -> ResourcesOut:
         raise NotImplementedError()
 
     @abstractmethod
@@ -39,7 +39,8 @@ class ResourceService(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_resources_history(self, filters: ResourceHistoryFilter) -> ResourcesOperationsOut:
+    def get_resources_history(self, filters: ResourceHistoryFilter,
+                              pagination: PaginationParams) -> ResourcesOperationsOut:
         raise NotImplementedError()
 
 
@@ -50,11 +51,12 @@ class PgResourceService(ResourceService):
         self.resource_repository: ResourceRepository = create_resource_repository()
         self.resource_history_repository: ResourceHistoryRepository = create_resource_history_repository()
 
-    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> ResourcesOut:
+    def get_resources(self, resource_filter: Optional[ResourceFilter], pagination: PaginationParams) -> ResourcesOut:
         with self.resource_repository as resource_repo:
-            resources_db = resource_repo.get_resources(resource_filter)
+            total_filtered_records = resource_repo.get_resources_count(resource_filter)
+            resources_db = resource_repo.get_resources(resource_filter, pagination)
             resources_out = [ResourceOut(**resource.to_dict()) for resource in resources_db]
-            return ResourcesOut(resources_count=len(resources_out), resources=resources_out)
+            return ResourcesOut(filtered_count=total_filtered_records, items=resources_out)
 
     def create_resource(self, resource_in: ResourceIn) -> ResourceOut:
         with self.resource_repository as resource_repo:
@@ -115,12 +117,14 @@ class PgResourceService(ResourceService):
             resource_history_db_to_save = ResourceHistory(**history_entry.dict())
             history_repo.add(resource_history_db_to_save)
 
-    def get_resources_history(self, filters: ResourceHistoryFilter) -> ResourcesOperationsOut:
+    def get_resources_history(self, filters: ResourceHistoryFilter,
+                              pagination: PaginationParams) -> ResourcesOperationsOut:
         with self.resource_history_repository as history_repo:
-            resources_history = history_repo.get_history(filters)
+            total_filtered_records = history_repo.get_history_count(filters)
+            resources_history = history_repo.get_history(filters, pagination)
             resource_history_out = [ResourceOperationOut(**history_record.to_dict()) for history_record in
                                     resources_history]
-            return ResourcesOperationsOut(records_count=len(resource_history_out), history_records=resource_history_out)
+            return ResourcesOperationsOut(filtered_count=total_filtered_records, items=resource_history_out)
 
 
 def create_resource_service() -> ResourceService:

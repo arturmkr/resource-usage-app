@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Query, Depends
 
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
 from models.enums import Status, ResourceOperationType
-from models.filters import ResourceFilter, ResourceHistoryFilter
+from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
 from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut
 from resource_service import ResourceService, create_resource_service
 
@@ -22,6 +22,7 @@ def get_actions(resource_id: Optional[str] = None,
                 operation: Optional[ResourceOperationType] = None,
                 start_date: Optional[datetime.datetime] = None,
                 end_date: Optional[datetime.datetime] = None,
+                pagination: PaginationParams = Depends(),
                 resource_service: ResourceService = Depends(create_resource_service)):
     filters = ResourceHistoryFilter(
         resource_id=resource_id,
@@ -29,18 +30,19 @@ def get_actions(resource_id: Optional[str] = None,
         start_date=start_date,
         end_date=end_date
     )
-    return resource_service.get_resources_history(filters)
+    return resource_service.get_resources_history(filters, pagination)
 
 
 @app.get("/resources", status_code=200, response_model=ResourcesOut)
 def get_resources(status: Optional[Status] = Query(None),
                   tags: Optional[List[str]] = Query(None, description="Comma-separated list of tags"),
+                  pagination: PaginationParams = Depends(),
                   resource_service: ResourceService = Depends(create_resource_service)
                   ) -> ResourcesOut:
     if tags:
         tags = [tag.strip() for tag in tags[0].split(',')]
     resource_filter = ResourceFilter(status=status, tags=tags)
-    return resource_service.get_resources(resource_filter)
+    return resource_service.get_resources(resource_filter, pagination)
 
 
 @app.post("/resources", status_code=200, response_model=ResourceOut)

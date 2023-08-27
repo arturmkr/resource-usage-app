@@ -1,8 +1,6 @@
-- [ ] check docker dependencies
 - [ ] id and created_at generator
 - [ ] add auth
 - [ ] add gRPC
-- [ ] add pagination
 - [ ] add description for block operation
 - [ ] add foreign keys
 

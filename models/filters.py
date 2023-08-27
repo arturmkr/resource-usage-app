@@ -16,3 +16,11 @@ class ResourceHistoryFilter(BaseModel):
     operation: Optional[ResourceOperationType] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+
+DEFAULT_PAGE_SIZE = 10
+
+
+class PaginationParams(BaseModel):
+    skip: int = 0
+    limit: int = DEFAULT_PAGE_SIZE

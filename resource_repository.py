@@ -1,16 +1,22 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Type
 
+from sqlalchemy import func
+
 from config.default import INIT_DB
 from db_connection import get_engine, DbSession
 from exceptions import ResourceNotFoundException
 from models.db_models import Resource
-from models.filters import ResourceFilter
+from models.filters import ResourceFilter, PaginationParams
 
 
 class ResourceRepository(DbSession, ABC):
     @abstractmethod
-    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> List[Resource]:
+    def get_resources(self, resource_filter: Optional[ResourceFilter], pagination: PaginationParams) -> List[Resource]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_resources_count(self, resource_filter: Optional[ResourceFilter]) -> int:
         raise NotImplementedError()
 
     @abstractmethod
@@ -31,19 +37,26 @@ class ResourceRepository(DbSession, ABC):
 
 
 class ResourceRepositoryPostgreSQL(ResourceRepository):
-
-    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> list[Type[Resource]]:
-        query = self.session.query(Resource)
-
+    @staticmethod
+    def _apply_filters(query, resource_filter: Optional[ResourceFilter]):
         if resource_filter.status:
             query = query.filter(Resource.status == resource_filter.status)
         if resource_filter.tags:
             for tag in resource_filter.tags:
                 query = query.filter(Resource.tags.contains([tag]))
 
-        resources = query.all()
+        return query
 
-        return resources
+    def get_resources_count(self, resource_filter: Optional[ResourceFilter]) -> int:
+        query = self.session.query(func.count(Resource.id))
+        query = self._apply_filters(query, resource_filter)
+        return query.scalar()
+
+    def get_resources(self, resource_filter: Optional[ResourceFilter], pagination: PaginationParams) -> list[
+        Type[Resource]]:
+        query = self.session.query(Resource)
+        query = self._apply_filters(query, resource_filter)
+        return query.offset(pagination.skip).limit(pagination.limit).all()
 
     def create_resource(self, resource: Resource) -> Resource:
         self.session.add(resource)
