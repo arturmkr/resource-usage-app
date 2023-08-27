@@ -1,12 +1,13 @@
 from abc import abstractmethod, ABC
-from typing import List
+from typing import List, Type
+from uuid import UUID
 
-from db_connection import session_factory
+from db_connection import DbSession
 from models.db_models import ResourceHistory
 from models.filters import ResourceHistoryFilter
 
 
-class ResourceHistoryRepository(ABC):
+class ResourceHistoryRepository(DbSession, ABC):
     @abstractmethod
     def get_history(self, filters: ResourceHistoryFilter) -> List[ResourceHistory]:
         raise NotImplementedError()
@@ -17,14 +18,12 @@ class ResourceHistoryRepository(ABC):
 
 
 class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
-    def __init__(self) -> None:
-        self.session = session_factory()
 
-    def get_history(self, filters: ResourceHistoryFilter) -> List[ResourceHistory]:
+    def get_history(self, filters: ResourceHistoryFilter) -> list[Type[ResourceHistory]]:
         query = self.session.query(ResourceHistory)
 
         if filters.resource_id:
-            query = query.filter(ResourceHistory.resource_id == filters.resource_id)
+            query = query.filter(ResourceHistory.resource_id == UUID(filters.resource_id))
 
         if filters.operation:
             query = query.filter(ResourceHistory.operation == filters.operation)
@@ -39,7 +38,7 @@ class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
 
     def add(self, history_entry: ResourceHistory) -> ResourceHistory:
         self.session.add(history_entry)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(history_entry)
         return history_entry
 

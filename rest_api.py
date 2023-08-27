@@ -17,6 +17,21 @@ async def healthcheck():
     return "OK"
 
 
+@app.get("/resources/actions", response_model=ResourcesOperationsOut)
+def get_actions(resource_id: Optional[str] = None,
+                operation: Optional[ResourceOperationType] = None,
+                start_date: Optional[datetime.datetime] = None,
+                end_date: Optional[datetime.datetime] = None,
+                resource_service: ResourceService = Depends(create_resource_service)):
+    filters = ResourceHistoryFilter(
+        resource_id=resource_id,
+        operation=operation,
+        start_date=start_date,
+        end_date=end_date
+    )
+    return resource_service.get_resources_history(filters)
+
+
 @app.get("/resources", status_code=200, response_model=ResourcesOut)
 def get_resources(status: Optional[Status] = Query(None),
                   tags: Optional[List[str]] = Query(None, description="Comma-separated list of tags"),
@@ -71,21 +86,6 @@ def release_resource(resource_id: str, resource_service: ResourceService = Depen
         raise HTTPException(status_code=400, detail=str(e))
     except ResourceNotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
-@app.get("/resources/history", response_model=ResourcesOperationsOut)
-def get_resource_history(resource_id: Optional[str] = None,
-                         operation: Optional[ResourceOperationType] = None,
-                         start_date: Optional[datetime.datetime] = None,
-                         end_date: Optional[datetime.datetime] = None,
-                         resource_service: ResourceService = Depends(create_resource_service)):
-    filters = ResourceHistoryFilter(
-        resource_id=resource_id,
-        operation=operation,
-        start_date=start_date,
-        end_date=end_date
-    )
-    return resource_service.get_resources_history(filters)
 
 
 @app.on_event("shutdown")

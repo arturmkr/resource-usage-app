@@ -34,6 +34,6 @@ class ResourceHistory(Base, ToDict):
 
     id = Column(UUID, primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    resource_id = Column(String(36))
+    resource_id = Column(UUID)
     operation = Column(Enum(ResourceOperationType))
     description = Column(String(255))

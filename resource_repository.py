@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Type
 
 from config.default import INIT_DB
-from db_connection import session_factory, get_engine
+from db_connection import get_engine, DbSession
 from exceptions import ResourceNotFoundException
 from models.db_models import Resource
 from models.filters import ResourceFilter
 
 
-class ResourceRepository(ABC):
+class ResourceRepository(DbSession, ABC):
     @abstractmethod
     def get_resources(self, resource_filter: Optional[ResourceFilter]) -> List[Resource]:
         raise NotImplementedError()
@@ -32,10 +32,7 @@ class ResourceRepository(ABC):
 
 class ResourceRepositoryPostgreSQL(ResourceRepository):
 
-    def __init__(self) -> None:
-        self.session = session_factory()
-
-    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> List[Resource]:
+    def get_resources(self, resource_filter: Optional[ResourceFilter]) -> list[Type[Resource]]:
         query = self.session.query(Resource)
 
         if resource_filter.status:
@@ -50,7 +47,7 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
 
     def create_resource(self, resource: Resource) -> Resource:
         self.session.add(resource)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(resource)
         return resource
 
@@ -63,14 +60,12 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
         for key, value in resource.to_dict().items():
             setattr(existing_resource, key, value)
 
-        self.session.commit()
         return existing_resource
 
     def remove_resource(self, resource_id: str):
         existing_resource = self.session.query(Resource).filter_by(id=resource_id).first()
         if existing_resource:
             self.session.delete(existing_resource)
-            self.session.commit()
         else:
             raise ResourceNotFoundException(str(resource_id))
 

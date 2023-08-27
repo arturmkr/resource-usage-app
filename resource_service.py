@@ -51,69 +51,76 @@ class PgResourceService(ResourceService):
         self.resource_history_repository: ResourceHistoryRepository = create_resource_history_repository()
 
     def get_resources(self, resource_filter: Optional[ResourceFilter]) -> ResourcesOut:
-        resources_db = self.resource_repository.get_resources(resource_filter)
-        resources_out = [ResourceOut(**resource.to_dict()) for resource in resources_db]
-        return ResourcesOut(resources_count=len(resources_out), resources=resources_out)
+        with self.resource_repository as resource_repo:
+            resources_db = resource_repo.get_resources(resource_filter)
+            resources_out = [ResourceOut(**resource.to_dict()) for resource in resources_db]
+            return ResourcesOut(resources_count=len(resources_out), resources=resources_out)
 
     def create_resource(self, resource_in: ResourceIn) -> ResourceOut:
-        resource_out: ResourceOut = ResourceOut(
-            id=uuid.uuid4(),
-            created_at=datetime.now(),
-            **resource_in.dict()
-        )
-        resource_db_to_save = Resource(**resource_out.dict())
-        resource_db_saved = self.resource_repository.create_resource(resource_db_to_save)
-        resource_out = ResourceOut(**resource_db_saved.to_dict())
-        return resource_out
+        with self.resource_repository as resource_repo:
+            resource_out: ResourceOut = ResourceOut(
+                id=uuid.uuid4(),
+                created_at=datetime.now(),
+                **resource_in.dict()
+            )
+            resource_db_to_save = Resource(**resource_out.dict())
+            resource_db_saved = resource_repo.create_resource(resource_db_to_save)
+            resource_out = ResourceOut(**resource_db_saved.to_dict())
+            return resource_out
 
     def remove_resource(self, resource_id: str) -> None:
-        self.resource_repository.remove_resource(resource_id)
+        with self.resource_repository as resource_repo:
+            resource_repo.remove_resource(resource_id)
 
     def get_resource(self, resource_id: str) -> ResourceOut:
-        resource_db = self.resource_repository.get_resource(resource_id)
-        return ResourceOut(**resource_db.to_dict())
+        with self.resource_repository as resource_repo:
+            resource_db = resource_repo.get_resource(resource_id)
+            return ResourceOut(**resource_db.to_dict())
 
     def block_resource(self, resource_id: str) -> None:
-        resource = self.resource_repository.get_resource(resource_id)
+        with self.resource_repository as resource_repo, self.resource_history_repository as history_repo:
+            resource = resource_repo.get_resource(resource_id)
 
-        if not resource:
-            raise ResourceNotFoundException(resource_id)
-        if resource.status != Status.FREE:
-            raise ResourceBlockException(resource_id)
+            if not resource:
+                raise ResourceNotFoundException(resource_id)
+            if resource.status != Status.FREE:
+                raise ResourceBlockException(resource_id)
 
-        resource.status = Status.BLOCKED
-        self.resource_repository.update(resource)
+            resource.status = Status.BLOCKED
+            resource_repo.update(resource)
 
-        history_entry = ResourceOperationOut(id=uuid.uuid4(),
-                                             resource_id=uuid.UUID(resource_id),
-                                             operation=ResourceOperationType.BLOCK)
+            history_entry = ResourceOperationOut(id=uuid.uuid4(),
+                                                 resource_id=uuid.UUID(resource_id),
+                                                 operation=ResourceOperationType.BLOCK)
 
-        resource_history_db_to_save = ResourceHistory(**history_entry.dict())
-        self.resource_history_repository.add(resource_history_db_to_save)
+            resource_history_db_to_save = ResourceHistory(**history_entry.dict())
+            history_repo.add(resource_history_db_to_save)
 
     def release_resource(self, resource_id: str) -> None:
-        resource = self.resource_repository.get_resource(resource_id)
+        with self.resource_repository as resource_repo, self.resource_history_repository as history_repo:
+            resource = resource_repo.get_resource(resource_id)
 
-        if not resource:
-            raise ResourceNotFoundException(resource_id)
-        if resource.status != Status.BLOCKED:
-            raise ResourceReleaseException(resource_id)
+            if not resource:
+                raise ResourceNotFoundException(resource_id)
+            if resource.status != Status.BLOCKED:
+                raise ResourceReleaseException(resource_id)
 
-        resource.status = Status.FREE
-        self.resource_repository.update(resource)
+            resource.status = Status.FREE
+            resource_repo.update(resource)
 
-        history_entry = ResourceOperationOut(id=uuid.uuid4(),
-                                             resource_id=uuid.UUID(resource_id),
-                                             operation=ResourceOperationType.RELEASE)
+            history_entry = ResourceOperationOut(id=uuid.uuid4(),
+                                                 resource_id=uuid.UUID(resource_id),
+                                                 operation=ResourceOperationType.RELEASE)
 
-        resource_history_db_to_save = ResourceHistory(**history_entry.dict())
-        self.resource_history_repository.add(resource_history_db_to_save)
+            resource_history_db_to_save = ResourceHistory(**history_entry.dict())
+            history_repo.add(resource_history_db_to_save)
 
     def get_resources_history(self, filters: ResourceHistoryFilter) -> ResourcesOperationsOut:
-        resources_history = self.resource_history_repository.get_history(filters)
-        resource_history_out = [ResourceOperationOut(**history_record.to_dict()) for history_record in
-                                resources_history]
-        return ResourcesOperationsOut(records_count=len(resource_history_out), history_records=resource_history_out)
+        with self.resource_history_repository as history_repo:
+            resources_history = history_repo.get_history(filters)
+            resource_history_out = [ResourceOperationOut(**history_record.to_dict()) for history_record in
+                                    resources_history]
+            return ResourcesOperationsOut(records_count=len(resource_history_out), history_records=resource_history_out)
 
 
 def create_resource_service() -> ResourceService:
