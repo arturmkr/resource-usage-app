@@ -49,15 +49,6 @@ def release_resource(resource_id: str):
     return {"message": f"Resource {resource_id} was released"}
 
 ==============================================
-
-FastAPI Dependency System:
-
-resource_service = PgResourceService()
-
-@app.get("/resources/{resource_id}")
-def get_resource(resource_id: UUID, service: PgResourceService = Depends(resource_service)):
-    return service.get_resource_by_id(resource_id)
-==============================================
 1. Implementing Context Manager in Base Class
 
 

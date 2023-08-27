@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional, List
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
 from models.enums import Status, ResourceOperationType
@@ -10,8 +10,6 @@ from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, Resour
 from resource_service import ResourceService, create_resource_service
 
 app = FastAPI(title="resource-usage-app")
-
-resource_service: ResourceService = create_resource_service()
 
 
 @app.get("/healthcheck", status_code=200)
@@ -22,6 +20,7 @@ async def healthcheck():
 @app.get("/resources", status_code=200, response_model=ResourcesOut)
 def get_resources(status: Optional[Status] = Query(None),
                   tags: Optional[List[str]] = Query(None, description="Comma-separated list of tags"),
+                  resource_service: ResourceService = Depends(create_resource_service)
                   ) -> ResourcesOut:
     if tags:
         tags = [tag.strip() for tag in tags[0].split(',')]
@@ -30,12 +29,13 @@ def get_resources(status: Optional[Status] = Query(None),
 
 
 @app.post("/resources", status_code=200, response_model=ResourceOut)
-def create_resource(resource_in: ResourceIn) -> ResourceOut:
+def create_resource(resource_in: ResourceIn,
+                    resource_service: ResourceService = Depends(create_resource_service)) -> ResourceOut:
     return resource_service.create_resource(resource_in)
 
 
 @app.delete("/resources/{resource_id}", status_code=200)
-def remove_resource(resource_id: str):
+def remove_resource(resource_id: str, resource_service: ResourceService = Depends(create_resource_service)):
     try:
         resource_service.remove_resource(resource_id)
         return {"message": f"Resource {resource_id} was removed"}
@@ -44,7 +44,7 @@ def remove_resource(resource_id: str):
 
 
 @app.get("/resources/{resource_id}", status_code=200, response_model=ResourceOut)
-def get_resource(resource_id: str) -> ResourceOut:
+def get_resource(resource_id: str, resource_service: ResourceService = Depends(create_resource_service)) -> ResourceOut:
     try:
         return resource_service.get_resource(resource_id)
     except ResourceNotFoundException as e:
@@ -52,7 +52,7 @@ def get_resource(resource_id: str) -> ResourceOut:
 
 
 @app.put("/resources/{resource_id}/block", status_code=200)
-def block_resource(resource_id: str):
+def block_resource(resource_id: str, resource_service: ResourceService = Depends(create_resource_service)):
     try:
         resource_service.block_resource(resource_id)
         return {"message": f"Resource {resource_id} was blocked"}
@@ -63,7 +63,7 @@ def block_resource(resource_id: str):
 
 
 @app.put("/resources/{resource_id}/release", status_code=200)
-def release_resource(resource_id: str):
+def release_resource(resource_id: str, resource_service: ResourceService = Depends(create_resource_service)):
     try:
         resource_service.release_resource(resource_id)
         return {"message": f"Resource {resource_id} was released"}
@@ -77,7 +77,8 @@ def release_resource(resource_id: str):
 def get_resource_history(resource_id: Optional[str] = None,
                          operation: Optional[ResourceOperationType] = None,
                          start_date: Optional[datetime.datetime] = None,
-                         end_date: Optional[datetime.datetime] = None):
+                         end_date: Optional[datetime.datetime] = None,
+                         resource_service: ResourceService = Depends(create_resource_service)):
     filters = ResourceHistoryFilter(
         resource_id=resource_id,
         operation=operation,
