@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from config.default import INIT_DB
-from db_connection import session_factory, engine
+from db_connection import session_factory
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
 from models.db_models import Resource, ResourceHistory
 from models.enums import Status, ResourceOperationType
