@@ -3,9 +3,9 @@
 - [ ] add gRPC
 - [ ] add description for block operation
 - [ ] add foreign keys
-
+- [ ] add centralize error handling
+```
 ==============================================
-
 Centralize Error Handling:
 
 # in rest_api.py
@@ -31,3 +31,4 @@ def release_resource(resource_id: str):
     return {"message": f"Resource {resource_id} was released"}
 
 ==============================================
+```
