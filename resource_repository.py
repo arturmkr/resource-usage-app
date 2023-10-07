@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Type
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from config.default import INIT_DB
 from db_connection import get_engine, DbSession
@@ -54,7 +55,7 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
 
     def get_resources(self, resource_filter: Optional[ResourceFilter], pagination: PaginationParams) -> list[
         Type[Resource]]:
-        query = self.session.query(Resource)
+        query = self.session.query(Resource).options(joinedload(Resource.variables))
         query = self._apply_filters(query, resource_filter)
         return query.offset(pagination.skip).limit(pagination.limit).all()
 
@@ -83,7 +84,7 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
             raise ResourceNotFoundException(str(resource_id))
 
     def get_resource(self, resource_id: str) -> Resource:
-        resource = self.session.query(Resource).filter_by(id=resource_id).first()
+        resource = self.session.query(Resource).options(joinedload(Resource.variables)).filter_by(id=resource_id).first()
         if resource:
             return resource
         else:

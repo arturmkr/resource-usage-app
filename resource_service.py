@@ -4,10 +4,12 @@ from datetime import datetime
 from typing import Optional
 
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from models.db_models import Resource, ResourceHistory
+from models.db_models import ResourceHistory
 from models.enums import Status, ResourceOperationType
 from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
-from models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut
+from models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut, \
+    OperationRequest
+from models.transformers import resource_db_model_to_pydantic, resource_pydantic_to_db_model
 from resource_history_repository import create_resource_history_repository, ResourceHistoryRepository
 from resource_repository import ResourceRepository, create_resource_repository
 
@@ -31,7 +33,7 @@ class ResourceService(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def block_resource(self, resource_id: str) -> None:
+    def block_resource(self, resource_id: str, block_request: OperationRequest) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -55,7 +57,7 @@ class PgResourceService(ResourceService):
         with self.resource_repository as resource_repo:
             total_filtered_records = resource_repo.get_resources_count(resource_filter)
             resources_db = resource_repo.get_resources(resource_filter, pagination)
-            resources_out = [ResourceOut(**resource.to_dict()) for resource in resources_db]
+            resources_out = [resource_db_model_to_pydantic(resource) for resource in resources_db]
             return ResourcesOut(filtered_count=total_filtered_records, items=resources_out)
 
     def create_resource(self, resource_in: ResourceIn) -> ResourceOut:
@@ -65,7 +67,8 @@ class PgResourceService(ResourceService):
                 created_at=datetime.now(),
                 **resource_in.dict()
             )
-            resource_db_to_save = Resource(**resource_out.dict())
+
+            resource_db_to_save = resource_pydantic_to_db_model(resource_out)
             resource_db_saved = resource_repo.create_resource(resource_db_to_save)
             resource_out = ResourceOut(**resource_db_saved.to_dict())
             return resource_out
@@ -77,9 +80,9 @@ class PgResourceService(ResourceService):
     def get_resource(self, resource_id: str) -> ResourceOut:
         with self.resource_repository as resource_repo:
             resource_db = resource_repo.get_resource(resource_id)
-            return ResourceOut(**resource_db.to_dict())
+            return resource_db_model_to_pydantic(resource_db)
 
-    def block_resource(self, resource_id: str) -> None:
+    def block_resource(self, resource_id: str, block_request: OperationRequest) -> None:
         with self.resource_repository as resource_repo, self.resource_history_repository as history_repo:
             resource = resource_repo.get_resource(resource_id)
 
@@ -93,7 +96,9 @@ class PgResourceService(ResourceService):
 
             history_entry = ResourceOperationOut(id=uuid.uuid4(),
                                                  resource_id=uuid.UUID(resource_id),
-                                                 operation=ResourceOperationType.BLOCK)
+                                                 operation=ResourceOperationType.BLOCK,
+                                                 description=block_request.description
+                                                 )
 
             resource_history_db_to_save = ResourceHistory(**history_entry.dict())
             history_repo.add(resource_history_db_to_save)

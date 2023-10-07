@@ -1,9 +1,10 @@
 from datetime import datetime
+from uuid import uuid4
 
-from sqlalchemy import Column, Enum, DateTime
+from sqlalchemy import Column, Enum, DateTime, ForeignKey
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 
 from models.enums import Status, ResourceOperationType
 
@@ -25,6 +26,8 @@ class Resource(Base, ToDict):
     status = Column(Enum(Status), default=Status.FREE)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    variables = relationship("ResourceVariable", back_populates="resource")
+
     def __repr__(self):
         return f'<Resource(id={self.id}, name={self.resource_name} status={self.status})>'
 
@@ -34,6 +37,17 @@ class ResourceHistory(Base, ToDict):
 
     id = Column(UUID, primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    resource_id = Column(UUID)
+    resource_id = Column(UUID, ForeignKey('resource.id'))
     operation = Column(Enum(ResourceOperationType))
     description = Column(String(255))
+
+
+class ResourceVariable(Base, ToDict):
+    __tablename__ = 'resource_variables'
+
+    id = Column(UUID, primary_key=True, default=uuid4)
+    resource_id = Column(UUID, ForeignKey('resource.id'))  # This is the change
+    name = Column(String(255))
+    value = Column(String(255))
+
+    resource = relationship("Resource", back_populates="variables")

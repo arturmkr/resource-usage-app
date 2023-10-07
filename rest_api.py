@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Query, Depends
 from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
 from models.enums import Status, ResourceOperationType
 from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
-from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut
+from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut, OperationRequest
 from resource_service import ResourceService, create_resource_service
 
 app = FastAPI(title="resource-usage-app")
@@ -69,9 +69,10 @@ def get_resource(resource_id: str, resource_service: ResourceService = Depends(c
 
 
 @app.put("/resources/{resource_id}/block", status_code=200)
-def block_resource(resource_id: str, resource_service: ResourceService = Depends(create_resource_service)):
+def block_resource(resource_id: str, block_request: OperationRequest,
+                   resource_service: ResourceService = Depends(create_resource_service)):
     try:
-        resource_service.block_resource(resource_id)
+        resource_service.block_resource(resource_id, block_request)
         return {"message": f"Resource {resource_id} was blocked"}
     except ResourceBlockException as e:
         raise HTTPException(status_code=400, detail=str(e))

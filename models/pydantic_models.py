@@ -7,10 +7,16 @@ from pydantic import BaseModel
 from models.enums import Status, ResourceOperationType
 
 
+class Variable(BaseModel):
+    name: str
+    value: str
+
+
 class ResourceIn(BaseModel):
     resource_name: str
     description: Optional[str]
     tags: Optional[list[str]]
+    variables: Optional[list[Variable]]
 
 
 class ResourceOut(ResourceIn):
@@ -35,3 +41,7 @@ class ResourceOperationOut(BaseModel):
 class ResourcesOperationsOut(BaseModel):
     filtered_count: int
     items: list[ResourceOperationOut]
+
+
+class OperationRequest(BaseModel):
+    description: Optional[str]
