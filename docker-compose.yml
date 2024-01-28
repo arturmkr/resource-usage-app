@@ -1,21 +1,21 @@
 version: '3.8'
 
 services:
-  #  app:
-  #    image: resource_usage_app_pg:latest
-  #    restart: always
-  #    ports:
-  #      - "10700:10700"
-  #    env_file: .env
-  #    environment:
-  #      - DB_USERNAME=$DB_USERNAME
-  #      - DB_PASSWORD=$DB_PASSWORD
-  #      - DB_HOSTNAME=db
-  #      - DB_NAME=$DB_NAME
-  #      - DB_PORT=$DB_PORT
-  #    depends_on:
-  #      db:
-  #        condition: service_healthy
+  app:
+    image: resource_usage_app_pg:latest
+    restart: always
+    ports:
+      - "10700:10700"
+    env_file: .env
+    environment:
+      - DB_USERNAME=$DB_USERNAME
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_HOSTNAME=db
+      - DB_NAME=$DB_NAME
+      - DB_PORT=$DB_PORT
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:latest
@@ -28,7 +28,7 @@ services:
       - POSTGRES_PASSWORD=$DB_PASSWORD
       - POSTGRES_DB=$DB_NAME
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - resource-usage-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready", "-d", "db_prod" ]
       interval: 30s
@@ -37,4 +37,4 @@ services:
       start_period: 80s
 
 volumes:
-  postgres-data:
+  resource-usage-postgres-data:

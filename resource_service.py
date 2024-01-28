@@ -70,8 +70,7 @@ class PgResourceService(ResourceService):
 
             resource_db_to_save = resource_pydantic_to_db_model(resource_out)
             resource_db_saved = resource_repo.create_resource(resource_db_to_save)
-            resource_out = ResourceOut(**resource_db_saved.to_dict())
-            return resource_out
+            return resource_db_model_to_pydantic(resource_db_saved)
 
     def remove_resource(self, resource_id: str) -> None:
         with self.resource_repository as resource_repo:
