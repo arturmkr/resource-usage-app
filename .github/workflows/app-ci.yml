@@ -44,9 +44,9 @@ jobs:
 
     - name: Run init.sql script
       env:
-        POSTGRES_USER: user
-        POSTGRES_PASSWORD: password
-        POSTGRES_DB: testdb
+        POSTGRES_USER: flask
+        POSTGRES_PASSWORD: flaskpassword
+        POSTGRES_DB: resource
       run: |
         PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
 
