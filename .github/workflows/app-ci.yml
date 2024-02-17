@@ -1,10 +1,6 @@
-name: Python Application CI
+name: CI
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -14,9 +10,9 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_DB: testdb
           POSTGRES_USER: user
           POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
         ports:
           - 5432:5432
         options: >-
@@ -26,23 +22,29 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
+    - uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: |
-          pip install pipenv
-          pipenv install --dev
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
 
-      - name: Run Tests
-        env:
-          DB_USERNAME: user
-          DB_PASSWORD: password
-          DB_HOSTNAME: localhost
-          DB_NAME: testdb
-          DB_PORT: 5432
-        run: |
-          pipenv run pytest tests/
+    - name: Install dependencies
+      run: |
+        pip install pipenv
+        pipenv install --dev
+
+    - name: Set up PostgreSQL client
+      run: sudo apt-get install -y postgresql-client
+
+    - name: Run init.sql script
+      env:
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+        POSTGRES_DB: testdb
+      run: |
+        PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f ./path/to/init.sql
+
+    - name: Run Tests
+      run: |
+        pipenv run pytest tests/
