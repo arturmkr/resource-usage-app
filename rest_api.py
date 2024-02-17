@@ -89,16 +89,3 @@ def release_resource(resource_id: str, resource_service: ResourceService = Depen
         raise HTTPException(status_code=400, detail=str(e))
     except ResourceNotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    pass
-    # resource_service.close_connection()
-
-
-@app.on_event("startup")
-def startup_event():
-    pass
-    # Create tables if they don't exist on application startup
-    # resource_repository.init_db()

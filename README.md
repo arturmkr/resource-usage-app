@@ -1,4 +1,5 @@
 **ToDo:**
+
 - [ ] id and created_at generator
 - [ ] add auth
 - [ ] add gRPC
@@ -6,6 +7,7 @@
 - [ ] add foreign keys
 - [ ] add centralize error handling
 - [ ] move tags to variables and search by them
+
 ```
 ==============================================
 Centralize Error Handling:

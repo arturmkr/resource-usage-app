@@ -1,8 +1,8 @@
-from abc import ABC
+from contextlib import contextmanager
 from functools import lru_cache
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 from config.default import DB_USERNAME, DB_PASSWORD, DB_HOSTNAME, DB_PORT, DB_NAME
 
@@ -17,16 +17,14 @@ def get_engine():
 session_factory = sessionmaker(bind=get_engine())
 
 
-class DbSession(ABC):
-
-    def __enter__(self):
-        self.session: Session = session_factory()
-        self.transaction = self.session.begin()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self.transaction.rollback()
-        else:
-            self.transaction.commit()
-        self.session.close()
+@contextmanager
+def get_db_session():
+    session = session_factory()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()

@@ -5,3 +5,16 @@ __pycache__/
 .DS_Store
 .idea
 .vscode
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+coverage.out
+report.json

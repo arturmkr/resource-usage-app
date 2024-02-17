@@ -3,23 +3,24 @@ from typing import List, Type
 from uuid import UUID
 
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-from db_connection import DbSession
 from models.db_models import ResourceHistory
 from models.filters import ResourceHistoryFilter, PaginationParams
 
 
-class ResourceHistoryRepository(DbSession, ABC):
+class ResourceHistoryRepository(ABC):
     @abstractmethod
-    def get_history(self, filters: ResourceHistoryFilter, pagination: PaginationParams) -> List[ResourceHistory]:
+    def get_history(self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams) -> List[
+        ResourceHistory]:
         raise NotImplementedError()
 
     @abstractmethod
-    def add(self, history_entry: ResourceHistory) -> None:
+    def add(self, session: Session, history_entry: ResourceHistory) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_history_count(self, filters: ResourceHistoryFilter) -> int:
+    def get_history_count(self, session: Session, filters: ResourceHistoryFilter) -> int:
         raise NotImplementedError()
 
 
@@ -40,20 +41,21 @@ class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
 
         return query
 
-    def get_history_count(self, filters: ResourceHistoryFilter) -> int:
-        query = self.session.query(func.count(ResourceHistory.id))
+    def get_history_count(self, session: Session, filters: ResourceHistoryFilter) -> int:
+        query = session.query(func.count(ResourceHistory.id))
         query = self._apply_filters(query, filters)
         return query.scalar()
 
-    def get_history(self, filters: ResourceHistoryFilter, pagination: PaginationParams) -> list[Type[ResourceHistory]]:
-        query = self.session.query(ResourceHistory)
+    def get_history(self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams) -> list[
+        Type[ResourceHistory]]:
+        query = session.query(ResourceHistory)
         query = self._apply_filters(query, filters)
         return query.offset(pagination.skip).limit(pagination.limit).all()
 
-    def add(self, history_entry: ResourceHistory) -> ResourceHistory:
-        self.session.add(history_entry)
-        self.session.flush()
-        self.session.refresh(history_entry)
+    def add(self, session: Session, history_entry: ResourceHistory) -> ResourceHistory:
+        session.add(history_entry)
+        session.flush()
+        session.refresh(history_entry)
         return history_entry
 
 
