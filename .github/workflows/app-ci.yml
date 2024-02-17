@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    environment:
+    env:
       DB_HOSTNAME: localhost
       DB_PORT: 5432
       DB_USERNAME: flask
