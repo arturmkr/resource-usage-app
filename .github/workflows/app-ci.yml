@@ -43,7 +43,7 @@ jobs:
         POSTGRES_PASSWORD: password
         POSTGRES_DB: testdb
       run: |
-        PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f ./path/to/init.sql
+        PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
 
     - name: Run Tests
       run: |
