@@ -7,17 +7,17 @@ jobs:
     env:
       DB_HOSTNAME: localhost
       DB_PORT: 5432
-      DB_USERNAME: flask
-      DB_PASSWORD: flaskpassword
-      DB_NAME: resource
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres
         env:
-          POSTGRES_USER: flask
-          POSTGRES_PASSWORD: flaskpassword
-          POSTGRES_DB: resource
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
         ports:
           - 5432:5432
         options: >-
@@ -44,9 +44,9 @@ jobs:
 
     - name: Run init.sql script
       env:
-        POSTGRES_USER: flask
-        POSTGRES_PASSWORD: flaskpassword
-        POSTGRES_DB: resource
+        POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+        POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        POSTGRES_DB: ${{ secrets.DB_NAME }}
       run: |
         PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
 
