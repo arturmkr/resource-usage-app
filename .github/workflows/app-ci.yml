@@ -4,15 +4,20 @@ on: [push, pull_request]
 
 jobs:
   build:
+    environment:
+      DB_HOSTNAME: localhost
+      DB_PORT: 5432
+      DB_USERNAME: flask
+      DB_PASSWORD: flaskpassword
+      DB_NAME: resource
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres
         env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: testdb
+          POSTGRES_USER: flask
+          POSTGRES_PASSWORD: flaskpassword
+          POSTGRES_DB: resource
         ports:
           - 5432:5432
         options: >-
