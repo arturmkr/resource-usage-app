@@ -3,11 +3,11 @@ from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException, Query, Depends
 
-from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from models.enums import Status, ResourceOperationType
-from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
-from models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut, OperationRequest
-from resource_service import ResourceService, create_resource_service
+from src.exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
+from src.models.enums import Status, ResourceOperationType
+from src.models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
+from src.models.pydantic_models import ResourceOut, ResourcesOut, ResourceIn, ResourcesOperationsOut, OperationRequest
+from src.resource_service import ResourceService, create_resource_service
 
 app = FastAPI(title="resource-usage-app")
 

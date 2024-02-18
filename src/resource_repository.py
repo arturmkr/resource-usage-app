@@ -4,9 +4,9 @@ from typing import Optional, List, Type
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, Session
 
-from exceptions import ResourceNotFoundException
-from models.db_models import Resource
-from models.filters import ResourceFilter, PaginationParams
+from src.exceptions import ResourceNotFoundException
+from src.models.db_models import Resource
+from src.models.filters import ResourceFilter, PaginationParams
 
 
 class ResourceRepository(ABC):

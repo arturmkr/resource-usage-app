@@ -2,11 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from models.filters import PaginationParams, ResourceFilter
-from resource_repository import ResourceRepositoryPostgreSQL
+from src.models.filters import ResourceFilter, PaginationParams
+from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
-@patch('db_connection.get_db_session')
+@patch('src.db_connection.get_db_session')
 def test_resource_pagination(mock_get_db_session):
     mock_session = MagicMock()
     mock_get_db_session.return_value.__enter__.return_value = mock_session

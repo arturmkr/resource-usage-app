@@ -1,5 +1,5 @@
-from models.db_models import Resource, ResourceVariable
-from models.pydantic_models import ResourceOut
+from src.models.db_models import Resource, ResourceVariable
+from src.models.pydantic_models import ResourceOut
 
 
 def resource_db_model_to_pydantic(resource_db_obj: Resource) -> ResourceOut:

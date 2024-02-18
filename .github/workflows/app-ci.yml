@@ -30,17 +30,18 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Install pipenv
+      run: pip install pipenv
+
+    - uses: actions/setup-python@v3
       with:
         python-version: '3.9'
-
-    - name: Install dependencies
-      run: |
-        pip install pipenv
-        pipenv install --dev
+        cache: 'pipenv'
+        cache-dependency-path: |
+          Pipfile.lock
+    - run: pipenv install --ignore-pipfile
 
     - name: Set up PostgreSQL client
       run: sudo apt-get install -y postgresql-client
@@ -53,6 +54,10 @@ jobs:
       run: |
         PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
 
-    - name: Run Tests
+    - name: Run Unit Tests
       run: |
-        pipenv run pytest tests/ --cov
+        pipenv run pytest tests/unit --cov
+
+    - name: Run Integration Tests
+      run: |
+        pipenv run pytest tests/integration/

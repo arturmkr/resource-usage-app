@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from models.db_models import Resource
-from resource_repository import ResourceRepositoryPostgreSQL
+from src.models.db_models import Resource
+from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
 @pytest.fixture
 def mock_db_session():
-    with patch('db_connection.get_db_session') as mock:
+    with patch('src.db_connection.get_db_session') as mock:
         mock_session = MagicMock()
         mock.return_value.__enter__.return_value = mock_session
         yield mock_session

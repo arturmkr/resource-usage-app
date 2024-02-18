@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from models.enums import Status, ResourceOperationType
+from src.models.enums import Status, ResourceOperationType
 
 
 class ResourceFilter(BaseModel):

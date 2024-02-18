@@ -4,12 +4,12 @@ from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
-from exceptions import ResourceNotFoundException
-from models.filters import ResourceFilter, PaginationParams
-from resource_repository import ResourceRepositoryPostgreSQL
+from src.exceptions import ResourceNotFoundException
+from src.models.filters import ResourceFilter, PaginationParams
+from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
-@patch('resource_repository.ResourceRepositoryPostgreSQL.get_resources')
+@patch('src.resource_repository.ResourceRepositoryPostgreSQL.get_resources')
 def test_get_resources(mock_get_resources):
     mock_session = Mock()
     repo = ResourceRepositoryPostgreSQL()
@@ -21,7 +21,7 @@ def test_get_resources(mock_get_resources):
     mock_get_resources.assert_called_once_with(resource_filter, pagination)
 
 
-@patch('db_connection.get_db_session')
+@patch('src.db_connection.get_db_session')
 def test_get_resource_filter(mock_get_db_session):
     mock_session = MagicMock()
 
@@ -38,7 +38,7 @@ def test_get_resource_filter(mock_get_db_session):
     assert filter_by_call_found, "filter_by method was not called with correct arguments"
 
 
-@patch('db_connection.get_db_session')
+@patch('src.db_connection.get_db_session')
 def test_remove_resource(mock_get_db_session):
     mock_session = MagicMock()
     mock_session.query().filter_by().first.return_value = None  # Simulate resource not found

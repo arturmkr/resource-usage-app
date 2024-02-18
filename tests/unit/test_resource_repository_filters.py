@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 
-from models.db_models import Resource
-from models.filters import PaginationParams, ResourceFilter
-from resource_repository import ResourceRepositoryPostgreSQL
+from src.models.db_models import Resource
+from src.models.filters import ResourceFilter, PaginationParams
+from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
 def test_apply_filters():

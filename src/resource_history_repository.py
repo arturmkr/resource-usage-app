@@ -5,8 +5,8 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models.db_models import ResourceHistory
-from models.filters import ResourceHistoryFilter, PaginationParams
+from src.models.db_models import ResourceHistory
+from src.models.filters import ResourceHistoryFilter, PaginationParams
 
 
 class ResourceHistoryRepository(ABC):

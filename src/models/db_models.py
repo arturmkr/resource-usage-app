@@ -6,7 +6,7 @@ from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import declarative_base, relationship
 
-from models.enums import Status, ResourceOperationType
+from src.models.enums import Status, ResourceOperationType
 
 Base = declarative_base()
 

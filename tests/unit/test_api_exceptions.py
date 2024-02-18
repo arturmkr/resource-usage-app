@@ -4,9 +4,9 @@ from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
 
-from app import app
-from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from resource_service import create_resource_service
+from src.app import app
+from src.exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
+from src.resource_service import create_resource_service
 
 client = TestClient(app)
 

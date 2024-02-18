@@ -3,16 +3,16 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
 
-from db_connection import get_db_session
-from exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
-from models.db_models import ResourceHistory
-from models.enums import Status, ResourceOperationType
-from models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
-from models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut, \
+from src.db_connection import get_db_session
+from src.exceptions import ResourceNotFoundException, ResourceBlockException, ResourceReleaseException
+from src.models.db_models import ResourceHistory
+from src.models.enums import Status, ResourceOperationType
+from src.models.filters import ResourceFilter, ResourceHistoryFilter, PaginationParams
+from src.models.pydantic_models import ResourceIn, ResourceOut, ResourcesOut, ResourceOperationOut, ResourcesOperationsOut, \
     OperationRequest
-from models.transformers import resource_db_model_to_pydantic, resource_pydantic_to_db_model
-from resource_history_repository import create_resource_history_repository, ResourceHistoryRepository
-from resource_repository import ResourceRepository, create_resource_repository
+from src.models.transformers import resource_db_model_to_pydantic, resource_pydantic_to_db_model
+from src.resource_history_repository import create_resource_history_repository, ResourceHistoryRepository
+from src.resource_repository import ResourceRepository, create_resource_repository
 
 
 class ResourceService(ABC):

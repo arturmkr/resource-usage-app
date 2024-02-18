@@ -2,11 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from models.db_models import ResourceHistory
-from resource_history_repository import ResourceHistoryRepositoryPostgreSQL
+from src.models.db_models import ResourceHistory
+from src.resource_history_repository import ResourceHistoryRepositoryPostgreSQL
 
 
-@patch('db_connection.get_db_session')
+@patch('src.db_connection.get_db_session')
 def test_add_history(mock_get_db_session):
     mock_session = MagicMock()
     mock_get_db_session.return_value.__enter__.return_value = mock_session

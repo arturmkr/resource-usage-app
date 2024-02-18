@@ -2,8 +2,8 @@ import uuid
 
 import pytest
 
-from db_connection import get_db_session
-from models.db_models import Resource
+from src.db_connection import get_db_session
+from src.models.db_models import Resource
 
 
 @pytest.fixture

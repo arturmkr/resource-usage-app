@@ -3,8 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from exceptions import ResourceNotFoundException
-from resource_service import PgResourceService
+from src.exceptions import ResourceNotFoundException
+from src.resource_service import PgResourceService
 
 
 def test_remove_resource_not_found_exception():

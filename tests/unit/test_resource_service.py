@@ -3,8 +3,8 @@ import uuid
 from datetime import datetime
 from unittest.mock import Mock
 
-from models.pydantic_models import ResourceIn
-from resource_service import PgResourceService
+from src.models.pydantic_models import ResourceIn
+from src.resource_service import PgResourceService
 
 
 def test_create_resource():

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from models.enums import Status, ResourceOperationType
+from src.models.enums import Status, ResourceOperationType
 
 
 class Variable(BaseModel):
