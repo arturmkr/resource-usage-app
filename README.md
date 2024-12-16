@@ -1,0 +1,3 @@
+# resource-usage-app
+
+This project helps you manage shared resources (such as testing environments) in a simple way. You can register resources, tag them with specific features (for example, "DropBox" or "Salesforce"), and then easily search, lock, and release them through an API. This makes it simpler to know which resources are available and avoid confusion when multiple people or automated tests need them. It also keeps a history of usage, so you can understand resource demand over time.
