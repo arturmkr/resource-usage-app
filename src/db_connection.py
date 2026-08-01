@@ -1,30 +1,45 @@
 from contextlib import contextmanager
-from functools import lru_cache
+from functools import cache
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
-from src.config.default import DB_USERNAME, DB_PASSWORD, DB_HOSTNAME, DB_PORT, DB_NAME
+from src.config.default import get_settings
 
-db_url = f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/{DB_NAME}"
+_database_url_override: str | None = None
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_engine():
-    return create_engine(db_url)
+    return create_engine(_database_url_override or get_settings().database_url, pool_pre_ping=True)
 
 
-session_factory = sessionmaker(bind=get_engine())
+def configure_database(database_url: str) -> None:
+    global _database_url_override
+
+    if get_engine.cache_info().currsize:
+        get_engine().dispose()
+    _database_url_override = database_url
+    get_engine.cache_clear()
+
+
+def reset_database_configuration() -> None:
+    global _database_url_override
+
+    if get_engine.cache_info().currsize:
+        get_engine().dispose()
+    _database_url_override = None
+    get_engine.cache_clear()
 
 
 @contextmanager
 def get_db_session():
-    session = session_factory()
+    session = Session(get_engine(), expire_on_commit=False)
     try:
         yield session
         session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
-        raise e
+        raise
     finally:
         session.close()

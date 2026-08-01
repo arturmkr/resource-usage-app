@@ -17,12 +17,12 @@ def test_create_resource():
     mock_resource = Mock()
     mock_resource.variables = []  # Set variables to an empty list or a list of mocks
     mock_resource.to_dict.return_value = {
-        'id': uuid.uuid4(),
-        'resource_name': 'Test Resource',
-        'description': 'Test Description',
-        'tags': ['test'],
-        'variables': [],
-        'created_at': datetime.now(),  # Add the missing created_at field
+        "id": uuid.uuid4(),
+        "resource_name": "Test Resource",
+        "description": "Test Description",
+        "tags": ["test"],
+        "variables": [],
+        "created_at": datetime.now(),  # Add the missing created_at field
         # Add other necessary fields from your Resource model
     }
     mock_repo.create_resource.return_value = mock_resource

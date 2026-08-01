@@ -1,18 +1,18 @@
-from abc import abstractmethod, ABC
-from typing import List, Type
+from abc import ABC, abstractmethod
 from uuid import UUID
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.models.db_models import ResourceHistory
-from src.models.filters import ResourceHistoryFilter, PaginationParams
+from src.models.filters import PaginationParams, ResourceHistoryFilter
 
 
 class ResourceHistoryRepository(ABC):
     @abstractmethod
-    def get_history(self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams) -> List[
-        ResourceHistory]:
+    def get_history(
+        self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams
+    ) -> list[ResourceHistory]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -46,11 +46,12 @@ class ResourceHistoryRepositoryPostgreSQL(ResourceHistoryRepository):
         query = self._apply_filters(query, filters)
         return query.scalar()
 
-    def get_history(self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams) -> list[
-        Type[ResourceHistory]]:
+    def get_history(
+        self, session: Session, filters: ResourceHistoryFilter, pagination: PaginationParams
+    ) -> list[ResourceHistory]:
         query = session.query(ResourceHistory)
         query = self._apply_filters(query, filters)
-        return query.offset(pagination.skip).limit(pagination.limit).all()
+        return query.order_by(ResourceHistory.created_at.desc()).offset(pagination.skip).limit(pagination.limit).all()
 
     def add(self, session: Session, history_entry: ResourceHistory) -> ResourceHistory:
         session.add(history_entry)

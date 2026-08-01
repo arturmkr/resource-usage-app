@@ -20,7 +20,7 @@ def test_get_resource():
         status="FREE",
         created_at="2021-01-01T00:00:00",
         tags=["test"],
-        description="Test Description"
+        description="Test Description",
     )
     app.dependency_overrides[create_resource_service] = lambda: mock_service
     resource_id = "123e4567-e89b-12d3-a456-426614174000"
@@ -46,13 +46,19 @@ def test_create_resource_endpoint():
         # Include other required fields as per ResourceOut model
     )
 
-    resource_data = {
-        "resource_name": "New Resource",
-        "description": "A new test resource",
-        "tags": ["new", "test"]
-    }
+    resource_data = {"resource_name": "New Resource", "description": "A new test resource", "tags": ["new", "test"]}
 
     response = client.post("/resources", json=resource_data)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     mock_service.create_resource.assert_called_once()
+
+
+def test_claim_resource_endpoint_returns_no_content_when_unavailable():
+    mock_service = Mock()
+    mock_service.claim_resource.return_value = None
+    app.dependency_overrides[create_resource_service] = lambda: mock_service
+
+    response = client.post("/resources/claim", json={"tags": ["salesforce"]})
+
+    assert response.status_code == 204

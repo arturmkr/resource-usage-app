@@ -2,11 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from src.models.filters import ResourceFilter, PaginationParams
+from src.models.filters import PaginationParams, ResourceFilter
 from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
-@patch('src.db_connection.get_db_session')
+@patch("src.db_connection.get_db_session")
 def test_resource_pagination(mock_get_db_session):
     mock_session = MagicMock()
     mock_get_db_session.return_value.__enter__.return_value = mock_session
@@ -14,7 +14,7 @@ def test_resource_pagination(mock_get_db_session):
     repo = ResourceRepositoryPostgreSQL()
 
     # Use a dummy ResourceFilter for testing
-    resource_filter = ResourceFilter(status=None, tags=None)
+    resource_filter = ResourceFilter()
     pagination_params = PaginationParams(skip=0, limit=5)
 
     # Mock the session's query method to return a list of mock resources
@@ -23,6 +23,7 @@ def test_resource_pagination(mock_get_db_session):
     # Setup method chaining mock
     mock_query_chain = mock_session.query.return_value
     mock_query_chain.options.return_value = mock_query_chain
+    mock_query_chain.order_by.return_value = mock_query_chain
     mock_query_chain.offset.return_value = mock_query_chain
     mock_query_chain.limit.return_value = mock_query_chain
     mock_query_chain.all.return_value = mock_resources

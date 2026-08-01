@@ -1,16 +1,18 @@
-FROM python:3.9-slim
+FROM ghcr.io/astral-sh/uv:0.11.15 AS uv
 
-RUN pip install pipenv
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends libpq-dev python3-dev gcc \
-  && rm -rf /var/lib/apt/lists/*
-
+FROM python:3.14-slim AS builder
+COPY --from=uv /uv /uvx /bin/
 WORKDIR /app
-COPY Pipfile Pipfile
-COPY Pipfile.lock Pipfile.lock
-RUN pipenv install --deploy --system --ignore-pipfile
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-COPY . /app
-
-ENTRYPOINT [ "python3", "-m", "app" ]
+FROM python:3.14-slim
+RUN useradd --create-home --uid 10001 userhub
+WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv
+COPY src ./src
+ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+USER userhub
+EXPOSE 10700
+CMD ["python", "-m", "src.app"]
