@@ -18,7 +18,7 @@ from src.models.pydantic_models import (
 )
 from src.resource_service import ResourceService, create_resource_service
 
-app = FastAPI(title="UserHub")
+app = FastAPI(title="resource-usage-app")
 
 PaginationDep = Annotated[PaginationParams, Depends()]
 ResourceServiceDep = Annotated[ResourceService, Depends(create_resource_service)]

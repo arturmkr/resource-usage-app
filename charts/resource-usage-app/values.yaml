@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: arturmkr/userhub
+  repository: arturmkr/resource-usage-app
   pullPolicy: IfNotPresent
   tag: latest
 
@@ -38,7 +38,7 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: userhub.local
+    - host: resource-usage-app.local
       paths:
         - path: /
           pathType: Prefix
@@ -47,9 +47,9 @@ ingress:
 database:
   hostname: postgres.example.internal
   port: 5432
-  name: userhub
-  username: userhub
-  existingSecret: userhub-database
+  name: resource_usage_app
+  username: resource_usage_app
+  existingSecret: resource-usage-app-database
   passwordKey: password
 
 resources:

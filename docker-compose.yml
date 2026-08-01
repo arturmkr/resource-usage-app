@@ -6,9 +6,9 @@ services:
     environment:
       DB_HOSTNAME: db
       DB_PORT: 5432
-      DB_USERNAME: userhub
-      DB_PASSWORD: userhub
-      DB_NAME: userhub
+      DB_USERNAME: resource_usage_app
+      DB_PASSWORD: resource_usage_app
+      DB_NAME: resource_usage_app
     depends_on:
       db:
         condition: service_healthy
@@ -16,14 +16,14 @@ services:
   db:
     image: postgres:17.6-alpine
     environment:
-      POSTGRES_USER: userhub
-      POSTGRES_PASSWORD: userhub
-      POSTGRES_DB: userhub
+      POSTGRES_USER: resource_usage_app
+      POSTGRES_PASSWORD: resource_usage_app
+      POSTGRES_DB: resource_usage_app
     volumes:
       - resource-usage-postgres-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U userhub -d userhub"]
+      test: ["CMD-SHELL", "pg_isready -U resource_usage_app -d resource_usage_app"]
       interval: 5s
       timeout: 5s
       retries: 10

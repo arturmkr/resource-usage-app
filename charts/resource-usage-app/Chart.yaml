@@ -1,0 +1,6 @@
+apiVersion: v2
+name: resource-usage-app
+description: Helm chart for the resource-usage-app shared-resource coordination API
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

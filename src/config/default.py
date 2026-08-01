@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     app_port: int = 10700
     db_hostname: str = "localhost"
     db_port: int = 5432
-    db_username: str = "userhub"
-    db_password: SecretStr = SecretStr("userhub")
-    db_name: str = "userhub"
+    db_username: str = "resource_usage_app"
+    db_password: SecretStr = SecretStr("resource_usage_app")
+    db_name: str = "resource_usage_app"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

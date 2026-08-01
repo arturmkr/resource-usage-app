@@ -1,5 +1,5 @@
 [project]
-name = "userhub"
+name = "resource-usage-app"
 version = "0.1.0"
 description = "API for coordinating exclusive access to shared resources"
 readme = "README.md"

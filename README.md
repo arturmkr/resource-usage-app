@@ -1,6 +1,6 @@
-# UserHub
+# resource-usage-app
 
-UserHub coordinates exclusive access to scarce shared resources: test accounts, integration environments, bastion hosts, devices, or anything else that must be used by only one worker at a time.
+resource-usage-app coordinates exclusive access to scarce shared resources: test accounts, integration environments, bastion hosts, devices, or anything else that must be used by only one worker at a time.
 
 Resources have searchable tags and a `FREE` or `BLOCKED` status. A client can atomically claim one free resource matching a set of tags, use it, and release it. Every state transition is recorded in an audit history.
 
@@ -72,21 +72,21 @@ GitHub Actions runs linting, Helm validation, Testcontainers integration tests, 
 Configure these GitHub repository secrets:
 
 - `DOCKERHUB_USERNAME`: Docker Hub account or organization.
-- `DOCKERHUB_TOKEN`: Docker Hub access token with permission to push `userhub`.
+- `DOCKERHUB_TOKEN`: Docker Hub access token with permission to push `resource-usage-app`.
 
 Pull requests run tests but do not push images.
 
 ## Helm deployment
 
-The chart in `charts/userhub` deploys only the application. PostgreSQL must already exist, and its password must be stored in a Kubernetes Secret:
+The chart in `charts/resource-usage-app` deploys only the application. PostgreSQL must already exist, and its password must be stored in a Kubernetes Secret:
 
 ```bash
-kubectl create secret generic userhub-database \
+kubectl create secret generic resource-usage-app-database \
   --from-literal=password='<database-password>'
 
-helm upgrade --install userhub charts/userhub \
-  --set image.repository='<dockerhub-user>/userhub' \
+helm upgrade --install resource-usage-app charts/resource-usage-app \
+  --set image.repository='<dockerhub-user>/resource-usage-app' \
   --set database.hostname='<postgres-host>'
 ```
 
-Review `charts/userhub/values.yaml` for ingress, autoscaling, resources, and external database settings.
+Review `charts/resource-usage-app/values.yaml` for ingress, autoscaling, resources, and external database settings.
