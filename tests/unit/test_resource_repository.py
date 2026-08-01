@@ -1,27 +1,26 @@
 # tests/test_resource_repository.py
 import uuid
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from src.exceptions import ResourceNotFoundException
-from src.models.filters import ResourceFilter, PaginationParams
+from src.models.filters import PaginationParams, ResourceFilter
 from src.resource_repository import ResourceRepositoryPostgreSQL
 
 
-@patch('src.resource_repository.ResourceRepositoryPostgreSQL.get_resources')
+@patch("src.resource_repository.ResourceRepositoryPostgreSQL.get_resources")
 def test_get_resources(mock_get_resources):
     mock_session = Mock()
     repo = ResourceRepositoryPostgreSQL()
-    repo.session = mock_session
     resource_filter = ResourceFilter(status="FREE")
     pagination = PaginationParams(skip=0, limit=10)
 
-    repo.get_resources(resource_filter, pagination)
-    mock_get_resources.assert_called_once_with(resource_filter, pagination)
+    repo.get_resources(mock_session, resource_filter, pagination)
+    mock_get_resources.assert_called_once_with(mock_session, resource_filter, pagination)
 
 
-@patch('src.db_connection.get_db_session')
+@patch("src.db_connection.get_db_session")
 def test_get_resource_filter(mock_get_db_session):
     mock_session = MagicMock()
 
@@ -31,14 +30,13 @@ def test_get_resource_filter(mock_get_db_session):
     resource_id = "test-id"
     repo.get_resource(mock_session, resource_id)
 
-    print("Mock session method calls:", mock_session.mock_calls)
-
-    filter_by_call_found = any('filter_by' in str(call) and 'id=' in str(call) and 'test-id' in str(call)
-                               for call in mock_session.mock_calls)
+    filter_by_call_found = any(
+        "filter_by" in str(call) and "id=" in str(call) and "test-id" in str(call) for call in mock_session.mock_calls
+    )
     assert filter_by_call_found, "filter_by method was not called with correct arguments"
 
 
-@patch('src.db_connection.get_db_session')
+@patch("src.db_connection.get_db_session")
 def test_remove_resource(mock_get_db_session):
     mock_session = MagicMock()
     mock_session.query().filter_by().first.return_value = None  # Simulate resource not found

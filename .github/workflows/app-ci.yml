@@ -5,59 +5,111 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: resource-usage-app
+
 jobs:
-  build:
-    env:
-      DB_HOSTNAME: localhost
-      DB_PORT: 5432
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    permissions:
+      contents: read
+      checks: write
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+      - uses: azure/setup-helm@v5
 
-    - name: Install pipenv
-      run: pip install pipenv
+      - name: Install Python
+        run: uv python install
 
-    - uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
-        cache: 'pipenv'
-        cache-dependency-path: |
-          Pipfile.lock
-    - run: pipenv install --ignore-pipfile
+      - name: Install Python and dependencies
+        run: uv sync --locked --all-groups
 
-    - name: Set up PostgreSQL client
-      run: sudo apt-get install -y postgresql-client
+      - name: Lint
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
 
-    - name: Run init.sql script
-      env:
-        POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-        POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        POSTGRES_DB: ${{ secrets.DB_NAME }}
-      run: |
-        PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
+      - name: Lint Helm chart
+        run: helm lint charts/resource-usage-app
 
-    - name: Run Unit Tests
-      run: |
-        pipenv run pytest tests/unit --cov
+      - name: Test
+        run: uv run pytest --cov --cov-report=term-missing --junitxml=test-results/junit.xml
 
-    - name: Run Integration Tests
-      run: |
-        pipenv run pytest tests/integration/
+      - name: Publish test report
+        uses: dorny/test-reporter@v2
+        if: >-
+          ${{
+            !cancelled() &&
+            (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          }}
+        with:
+          name: Pytest report
+          path: test-results/junit.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results
+          path: test-results/junit.xml
+          if-no-files-found: warn
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image for pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha
+
+      - name: Log in to Docker Hub
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract image metadata
+        if: ${{ github.event_name != 'pull_request' }}
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

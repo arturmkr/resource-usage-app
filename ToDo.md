@@ -1,38 +1,23 @@
-**ToDo:**
+# Roadmap
 
-- [ ] id and created_at generator
-- [ ] add auth
-- [ ] add gRPC
-- [ ] add optional description for block operation
-- [ ] add foreign keys
-- [ ] add centralize error handling
-- [ ] move tags to variables and search by them
+Items are deliberately prioritized by product risk rather than novelty.
 
-```
-==============================================
-Centralize Error Handling:
+## Before production use
 
-# in rest_api.py
-from fastapi import HTTPException, status
+- Add authentication and authorization. Resource variables may contain credentials and must not be returned to every caller.
+- Add lease ownership and expiry (`owner_id`, `lease_token`, `expires_at`). Only the owner holding the token should be able to release or renew a resource.
+- Replace `init.sql` with versioned Alembic migrations.
+- Encrypt secret resource variables at rest or store references to a secrets manager instead of raw values.
+- Add metrics, structured logs, tracing, and alerts for lease contention and stale leases.
 
-@app.exception_handler(ResourceNotFoundException)
-def handle_resource_not_found_exception(request: Request, exc: ResourceNotFoundException):
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={"message": str(exc)},
-    )
+## Product improvements
 
-@app.exception_handler(ResourceReleaseException)
-def handle_resource_release_exception(request: Request, exc: ResourceReleaseException):
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"message": str(exc)},
-    )
+- Add a blocking/waiting client or long-poll endpoint with timeout and cancellation. The API currently returns `204` when no resource is available.
+- Add idempotency keys for create and claim operations.
+- Add resource administration endpoints and audit actor identity.
+- Define retention and pagination strategy for resource history.
 
-@app.put("/resources/{resource_id}/release", status_code=200)
-def release_resource(resource_id: str):
-    resource_service.release_resource(resource_id)
-    return {"message": f"Resource {resource_id} was released"}
+## Explicitly not planned
 
-==============================================
-```
+- gRPC: add only when a concrete client or performance requirement justifies a second API protocol.
+- Moving tags to resource variables: tags are searchable metadata; variables are resource payload and may be secret.

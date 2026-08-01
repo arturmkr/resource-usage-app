@@ -1,14 +1,19 @@
-from datetime import datetime
-from uuid import uuid4
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import Column, Enum, DateTime, ForeignKey
-from sqlalchemy import String
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.models.enums import Status, ResourceOperationType
+from src.models.enums import ResourceOperationType, Status
 
-Base = declarative_base()
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 class ToDict:
@@ -17,37 +22,39 @@ class ToDict:
 
 
 class Resource(Base, ToDict):
-    __tablename__ = 'resource'
+    __tablename__ = "resource"
 
-    id = Column(UUID, primary_key=True)
-    resource_name = Column(String(100), nullable=False)
-    description = Column(String(255))
-    tags = Column(ARRAY(String))
-    status = Column(Enum(Status), default=Status.FREE)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    resource_name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str | None] = mapped_column(String(255))
+    tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    status: Mapped[Status] = mapped_column(Enum(Status), default=Status.FREE)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
-    variables = relationship("ResourceVariable", back_populates="resource")
+    variables: Mapped[list[ResourceVariable]] = relationship(
+        back_populates="resource", cascade="all, delete-orphan", lazy="selectin"
+    )
 
     def __repr__(self):
-        return f'<Resource(id={self.id}, name={self.resource_name} status={self.status})>'
+        return f"<Resource(id={self.id}, name={self.resource_name} status={self.status})>"
 
 
 class ResourceHistory(Base, ToDict):
-    __tablename__ = 'resource_history'
+    __tablename__ = "resource_history"
 
-    id = Column(UUID, primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    resource_id = Column(UUID, ForeignKey('resource.id'))
-    operation = Column(Enum(ResourceOperationType))
-    description = Column(String(255))
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    resource_id: Mapped[UUID] = mapped_column(ForeignKey("resource.id", ondelete="CASCADE"), index=True)
+    operation: Mapped[ResourceOperationType] = mapped_column(Enum(ResourceOperationType))
+    description: Mapped[str | None] = mapped_column(String(255))
 
 
 class ResourceVariable(Base, ToDict):
-    __tablename__ = 'resource_variables'
+    __tablename__ = "resource_variables"
 
-    id = Column(UUID, primary_key=True, default=uuid4)
-    resource_id = Column(UUID, ForeignKey('resource.id'))  # This is the change
-    name = Column(String(255))
-    value = Column(String(255))
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    resource_id: Mapped[UUID] = mapped_column(ForeignKey("resource.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(255))
+    value: Mapped[str] = mapped_column(String(255))
 
-    resource = relationship("Resource", back_populates="variables")
+    resource: Mapped[Resource] = relationship(back_populates="variables")

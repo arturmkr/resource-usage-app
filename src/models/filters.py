@@ -1,26 +1,26 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from src.models.enums import Status, ResourceOperationType
+from src.models.enums import ResourceOperationType, Status
 
 
 class ResourceFilter(BaseModel):
-    status: Optional[Status] = None
-    tags: Optional[List[str]] = []
+    status: Status | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class ResourceHistoryFilter(BaseModel):
-    resource_id: Optional[str] = None
-    operation: Optional[ResourceOperationType] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    resource_id: str | None = None
+    operation: ResourceOperationType | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
 
 DEFAULT_PAGE_SIZE = 10
 
 
 class PaginationParams(BaseModel):
-    skip: int = 0
-    limit: int = DEFAULT_PAGE_SIZE
+    skip: Annotated[int, Field(ge=0)] = 0
+    limit: Annotated[int, Field(ge=1, le=100)] = DEFAULT_PAGE_SIZE

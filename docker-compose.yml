@@ -1,40 +1,32 @@
-version: '3.8'
-
 services:
-  #  app:
-  #    image: resource_usage_app_pg:latest
-  #    restart: always
-  #    ports:
-  #      - "10700:10700"
-  #    env_file: .env
-  #    environment:
-  #      - DB_USERNAME=$DB_USERNAME
-  #      - DB_PASSWORD=$DB_PASSWORD
-  #      - DB_HOSTNAME=db
-  #      - DB_NAME=$DB_NAME
-  #      - DB_PORT=$DB_PORT
-  #    depends_on:
-  #      db:
-  #        condition: service_healthy
+  app:
+    build: .
+    ports:
+      - "10700:10700"
+    environment:
+      DB_HOSTNAME: db
+      DB_PORT: 5432
+      DB_USERNAME: resource_usage_app
+      DB_PASSWORD: resource_usage_app
+      DB_NAME: resource_usage_app
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
-    image: postgres:latest
-    restart: always
-    ports:
-      - '5432:5432'
-    env_file: .env
+    image: postgres:17.6-alpine
     environment:
-      - POSTGRES_USER=$DB_USERNAME
-      - POSTGRES_PASSWORD=$DB_PASSWORD
-      - POSTGRES_DB=$DB_NAME
+      POSTGRES_USER: resource_usage_app
+      POSTGRES_PASSWORD: resource_usage_app
+      POSTGRES_DB: resource_usage_app
     volumes:
       - resource-usage-postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready", "-d", "db_prod" ]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 80s
+      test: ["CMD-SHELL", "pg_isready -U resource_usage_app -d resource_usage_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   resource-usage-postgres-data:

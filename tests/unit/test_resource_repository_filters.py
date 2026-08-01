@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from src.models.db_models import Resource
-from src.models.filters import ResourceFilter, PaginationParams
+from src.models.filters import PaginationParams, ResourceFilter
 from src.resource_repository import ResourceRepositoryPostgreSQL
 
 

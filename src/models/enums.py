@@ -1,11 +1,11 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Status(str, Enum):
+class Status(StrEnum):
     FREE = "FREE"
     BLOCKED = "BLOCKED"
 
 
-class ResourceOperationType(str, Enum):
+class ResourceOperationType(StrEnum):
     BLOCK = "BLOCK"
     RELEASE = "RELEASE"

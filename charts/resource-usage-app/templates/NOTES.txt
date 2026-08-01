@@ -1,0 +1,8 @@
+Create the database password secret before installing resource-usage-app:
+
+  kubectl create secret generic {{ .Values.database.existingSecret }} \
+    --from-literal={{ .Values.database.passwordKey }}='<database-password>'
+
+Get the application URL:
+
+  kubectl port-forward service/{{ include "resource-usage-app.fullname" . }} 10700:{{ .Values.service.port }}
