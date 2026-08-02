@@ -1,5 +1,5 @@
 CREATE TYPE status AS ENUM ('FREE', 'BLOCKED');
-CREATE TYPE resourceoperationtype AS ENUM ('BLOCK', 'RELEASE');
+CREATE TYPE resourceoperationtype AS ENUM ('BLOCK', 'RELEASE', 'RENEW', 'EXPIRE');
 
 CREATE TABLE resource
 (
@@ -8,6 +8,9 @@ CREATE TABLE resource
     description   VARCHAR(255),
     tags          VARCHAR[] NOT NULL DEFAULT '{}',
     status        status NOT NULL DEFAULT 'FREE',
+    lease_token   UUID UNIQUE,
+    lease_owner   VARCHAR(255),
+    lease_expires_at TIMESTAMPTZ,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

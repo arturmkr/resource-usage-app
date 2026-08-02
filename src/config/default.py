@@ -8,9 +8,13 @@ class Settings(BaseSettings):
     app_port: int = 10700
     db_hostname: str = "localhost"
     db_port: int = 5432
-    db_username: str = "resource_usage_app"
-    db_password: SecretStr = SecretStr("resource_usage_app")
-    db_name: str = "resource_usage_app"
+    db_username: str = "resource_coordinator"
+    db_password: SecretStr = SecretStr("resource_coordinator")
+    db_name: str = "resource_coordinator"
+    app_default_lease_ttl_minutes: int = 240
+    app_max_lease_ttl_minutes: int = 480
+    app_lease_cleanup_interval_minutes: int = 10
+    app_lease_cleanup_enabled: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

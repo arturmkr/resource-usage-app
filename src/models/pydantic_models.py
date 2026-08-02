@@ -23,7 +23,13 @@ class ResourceOut(ResourceIn):
 
     id: UUID
     status: Status = Status.FREE
+    lease_owner: str | None = None
+    lease_expires_at: datetime | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class ResourceLeaseOut(ResourceOut):
+    lease_token: UUID
 
 
 class ResourcesOut(BaseModel):
@@ -50,5 +56,19 @@ class OperationRequest(BaseModel):
     description: str | None = Field(default=None, max_length=255)
 
 
-class ClaimRequest(OperationRequest):
+class LeaseRequest(OperationRequest):
+    lease_owner: str | None = Field(default=None, max_length=255)
+    ttl_minutes: int | None = Field(default=None, gt=0)
+
+
+class ClaimRequest(LeaseRequest):
     tags: list[str] = Field(min_length=1)
+
+
+class ReleaseRequest(OperationRequest):
+    lease_token: UUID
+
+
+class RenewRequest(OperationRequest):
+    lease_token: UUID
+    ttl_minutes: int | None = Field(default=None, gt=0)

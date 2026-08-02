@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: arturmkr/resource-usage-app
+  repository: arturmkr/resource-coordinator
   pullPolicy: IfNotPresent
   tag: latest
 
@@ -38,7 +38,7 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: resource-usage-app.local
+    - host: resource-coordinator.local
       paths:
         - path: /
           pathType: Prefix
@@ -47,10 +47,16 @@ ingress:
 database:
   hostname: postgres.example.internal
   port: 5432
-  name: resource_usage_app
-  username: resource_usage_app
-  existingSecret: resource-usage-app-database
+  name: resource_coordinator
+  username: resource_coordinator
+  existingSecret: resource-coordinator-database
   passwordKey: password
+
+lease:
+  defaultTtlMinutes: 240
+  maxTtlMinutes: 480
+  cleanupIntervalMinutes: 10
+  cleanupEnabled: true
 
 resources:
   requests:

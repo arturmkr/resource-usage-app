@@ -1,22 +1,36 @@
 import uuid
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from src.config.default import get_settings
 from src.db_connection import get_db_session
-from src.exceptions import ResourceBlockException, ResourceReleaseException
+from src.exceptions import (
+    ResourceBlockException,
+    ResourceLeaseValidationException,
+    ResourceReleaseException,
+    ResourceRenewException,
+)
 from src.models.db_models import ResourceHistory
-from src.models.enums import ResourceOperationType, Status
+from src.models.enums import ResourceOperationType
 from src.models.filters import PaginationParams, ResourceFilter, ResourceHistoryFilter
 from src.models.pydantic_models import (
     ClaimRequest,
-    OperationRequest,
+    LeaseRequest,
+    ReleaseRequest,
+    RenewRequest,
     ResourceIn,
+    ResourceLeaseOut,
     ResourceOperationOut,
     ResourceOut,
     ResourcesOperationsOut,
     ResourcesOut,
 )
-from src.models.transformers import resource_db_model_to_pydantic, resource_pydantic_to_db_model
+from src.models.transformers import (
+    resource_db_model_to_lease_pydantic,
+    resource_db_model_to_pydantic,
+    resource_pydantic_to_db_model,
+)
 from src.resource_history_repository import ResourceHistoryRepository, create_resource_history_repository
 from src.resource_repository import ResourceRepository, create_resource_repository
 
@@ -39,21 +53,29 @@ class ResourceService(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def block_resource(self, resource_id: UUID, block_request: OperationRequest) -> None:
+    def block_resource(self, resource_id: UUID, block_request: LeaseRequest) -> ResourceLeaseOut:
         raise NotImplementedError()
 
     @abstractmethod
-    def release_resource(self, resource_id: UUID) -> None:
+    def release_resource(self, resource_id: UUID, release_request: ReleaseRequest) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def claim_resource(self, claim_request: ClaimRequest) -> ResourceOut | None:
+    def renew_resource(self, resource_id: UUID, renew_request: RenewRequest) -> ResourceLeaseOut:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def claim_resource(self, claim_request: ClaimRequest) -> ResourceLeaseOut | None:
         raise NotImplementedError()
 
     @abstractmethod
     def get_resources_history(
         self, filters: ResourceHistoryFilter, pagination: PaginationParams
     ) -> ResourcesOperationsOut:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def release_expired_leases(self) -> int:
         raise NotImplementedError()
 
 
@@ -87,27 +109,51 @@ class PgResourceService(ResourceService):
             resource_db = self.resource_repository.get_resource(session, resource_id)
             return resource_db_model_to_pydantic(resource_db)
 
-    def block_resource(self, resource_id: UUID, block_request: OperationRequest) -> None:
+    def block_resource(self, resource_id: UUID, block_request: LeaseRequest) -> ResourceLeaseOut:
+        lease_token, lease_expires_at = self._create_lease(block_request.ttl_minutes)
         with get_db_session() as session:
-            resource = self.resource_repository.change_status(session, resource_id, Status.FREE, Status.BLOCKED)
+            resource = self.resource_repository.block(
+                session,
+                resource_id,
+                lease_token,
+                block_request.lease_owner,
+                lease_expires_at,
+            )
             if resource is None:
                 self._raise_status_change_error(session, resource_id, ResourceBlockException)
             self._add_history(session, resource_id, ResourceOperationType.BLOCK, block_request.description)
+            return resource_db_model_to_lease_pydantic(resource)
 
-    def release_resource(self, resource_id: UUID) -> None:
+    def release_resource(self, resource_id: UUID, release_request: ReleaseRequest) -> None:
         with get_db_session() as session:
-            resource = self.resource_repository.change_status(session, resource_id, Status.BLOCKED, Status.FREE)
+            resource = self.resource_repository.release(session, resource_id, release_request.lease_token)
             if resource is None:
                 self._raise_status_change_error(session, resource_id, ResourceReleaseException)
-            self._add_history(session, resource_id, ResourceOperationType.RELEASE)
+            self._add_history(session, resource_id, ResourceOperationType.RELEASE, release_request.description)
 
-    def claim_resource(self, claim_request: ClaimRequest) -> ResourceOut | None:
+    def renew_resource(self, resource_id: UUID, renew_request: RenewRequest) -> ResourceLeaseOut:
+        _, lease_expires_at = self._create_lease(renew_request.ttl_minutes)
         with get_db_session() as session:
-            resource = self.resource_repository.claim(session, claim_request.tags)
+            resource = self.resource_repository.renew(session, resource_id, renew_request.lease_token, lease_expires_at)
+            if resource is None:
+                self._raise_status_change_error(session, resource_id, ResourceRenewException)
+            self._add_history(session, resource_id, ResourceOperationType.RENEW, renew_request.description)
+            return resource_db_model_to_lease_pydantic(resource)
+
+    def claim_resource(self, claim_request: ClaimRequest) -> ResourceLeaseOut | None:
+        lease_token, lease_expires_at = self._create_lease(claim_request.ttl_minutes)
+        with get_db_session() as session:
+            resource = self.resource_repository.claim(
+                session,
+                claim_request.tags,
+                lease_token,
+                claim_request.lease_owner,
+                lease_expires_at,
+            )
             if resource is None:
                 return None
             self._add_history(session, resource.id, ResourceOperationType.BLOCK, claim_request.description)
-            return resource_db_model_to_pydantic(resource)
+            return resource_db_model_to_lease_pydantic(resource)
 
     def _raise_status_change_error(self, session, resource_id: UUID, operation_exception: type[Exception]) -> None:
         self.resource_repository.get_resource(session, str(resource_id))
@@ -124,6 +170,22 @@ class PgResourceService(ResourceService):
             id=uuid.uuid4(), resource_id=resource_id, operation=operation, description=description
         )
         self.resource_history_repository.add(session, history_entry)
+
+    def _create_lease(self, ttl_minutes: int | None) -> tuple[UUID, datetime]:
+        settings = get_settings()
+        ttl = ttl_minutes or settings.app_default_lease_ttl_minutes
+        if ttl < 1 or ttl > settings.app_max_lease_ttl_minutes:
+            raise ResourceLeaseValidationException(
+                f"Lease ttl must be between 1 and {settings.app_max_lease_ttl_minutes} minutes"
+            )
+        return uuid.uuid4(), datetime.now(UTC) + timedelta(minutes=ttl)
+
+    def release_expired_leases(self) -> int:
+        with get_db_session() as session:
+            expired_resources = self.resource_repository.release_expired_leases(session, datetime.now(UTC))
+            for resource in expired_resources:
+                self._add_history(session, resource.id, ResourceOperationType.EXPIRE)
+            return len(expired_resources)
 
     def get_resources_history(
         self, filters: ResourceHistoryFilter, pagination: PaginationParams

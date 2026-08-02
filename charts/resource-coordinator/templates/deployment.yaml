@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "resource-usage-app.fullname" . }}
+  name: {{ include "resource-coordinator.fullname" . }}
   labels:
-    {{- include "resource-usage-app.labels" . | nindent 4 }}
+    {{- include "resource-coordinator.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "resource-usage-app.selectorLabels" . | nindent 6 }}
+      {{- include "resource-coordinator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
-        {{- include "resource-usage-app.selectorLabels" . | nindent 8 }}
+        {{- include "resource-coordinator.selectorLabels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "resource-usage-app.serviceAccountName" . }}
+      serviceAccountName: {{ include "resource-coordinator.serviceAccountName" . }}
       automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -30,7 +30,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: resource-usage-app
+        - name: resource-coordinator
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -53,6 +53,14 @@ spec:
                 secretKeyRef:
                   name: {{ required "database.existingSecret is required" .Values.database.existingSecret }}
                   key: {{ .Values.database.passwordKey }}
+            - name: APP_DEFAULT_LEASE_TTL_MINUTES
+              value: {{ .Values.lease.defaultTtlMinutes | quote }}
+            - name: APP_MAX_LEASE_TTL_MINUTES
+              value: {{ .Values.lease.maxTtlMinutes | quote }}
+            - name: APP_LEASE_CLEANUP_INTERVAL_MINUTES
+              value: {{ .Values.lease.cleanupIntervalMinutes | quote }}
+            - name: APP_LEASE_CLEANUP_ENABLED
+              value: {{ .Values.lease.cleanupEnabled | quote }}
           livenessProbe:
             httpGet:
               path: /healthcheck

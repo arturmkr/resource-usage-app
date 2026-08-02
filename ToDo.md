@@ -1,23 +1,22 @@
 # Roadmap
 
-Items are deliberately prioritized by product risk rather than novelty.
+## Should do
 
-## Before production use
+- Add auth.
+- Decide how to handle secret variables: hide them from list responses, encrypt them, or store only references to a secret manager.
+- Connect `lease_token` to a real user or service account.
+- Replace `init.sql` with Alembic migrations.
+- Add metrics and structured logs.
 
-- Add authentication and authorization. Resource variables may contain credentials and must not be returned to every caller.
-- Add lease ownership and expiry (`owner_id`, `lease_token`, `expires_at`). Only the owner holding the token should be able to release or renew a resource.
-- Replace `init.sql` with versioned Alembic migrations.
-- Encrypt secret resource variables at rest or store references to a secrets manager instead of raw values.
-- Add metrics, structured logs, tracing, and alerts for lease contention and stale leases.
+## Nice To Have
 
-## Product improvements
+- Add a wait endpoint instead of forcing clients to retry after `204`.
+- Add idempotency keys for claim requests.
+- Add resource update endpoints: edit name, tags, description, and variables.
+- Add admin force-release for stuck resources.
+- Add cleanup rules for old history records.
 
-- Add a blocking/waiting client or long-poll endpoint with timeout and cancellation. The API currently returns `204` when no resource is available.
-- Add idempotency keys for create and claim operations.
-- Add resource administration endpoints and audit actor identity.
-- Define retention and pagination strategy for resource history.
+## Not Planned For Now
 
-## Explicitly not planned
-
-- gRPC: add only when a concrete client or performance requirement justifies a second API protocol.
-- Moving tags to resource variables: tags are searchable metadata; variables are resource payload and may be secret.
+- gRPC.
+- Moving tags into variables.

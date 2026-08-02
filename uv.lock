@@ -499,7 +499,7 @@ wheels = [
 ]
 
 [[package]]
-name = "resource-usage-app"
+name = "resource-coordinator"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

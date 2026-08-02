@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -34,11 +35,43 @@ class ResourceRepository(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def change_status(self, session: Session, resource_id: UUID, expected: Status, new: Status) -> Resource | None:
+    def block(
+        self,
+        session: Session,
+        resource_id: UUID,
+        lease_token: UUID,
+        lease_owner: str | None,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
         raise NotImplementedError()
 
     @abstractmethod
-    def claim(self, session: Session, tags: list[str]) -> Resource | None:
+    def release(self, session: Session, resource_id: UUID, lease_token: UUID) -> Resource | None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def renew(
+        self,
+        session: Session,
+        resource_id: UUID,
+        lease_token: UUID,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def claim(
+        self,
+        session: Session,
+        tags: list[str],
+        lease_token: UUID,
+        lease_owner: str | None,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def release_expired_leases(self, session: Session, now: datetime) -> list[Resource]:
         raise NotImplementedError()
 
 
@@ -85,16 +118,59 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
             return resource
         raise ResourceNotFoundException(resource_id)
 
-    def change_status(self, session: Session, resource_id: UUID, expected: Status, new: Status) -> Resource | None:
+    def block(
+        self,
+        session: Session,
+        resource_id: UUID,
+        lease_token: UUID,
+        lease_owner: str | None,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
         statement = (
             update(Resource)
-            .where(Resource.id == resource_id, Resource.status == expected)
-            .values(status=new)
+            .where(Resource.id == resource_id, Resource.status == Status.FREE)
+            .values(
+                status=Status.BLOCKED,
+                lease_token=lease_token,
+                lease_owner=lease_owner,
+                lease_expires_at=lease_expires_at,
+            )
             .returning(Resource)
         )
         return session.execute(statement).scalar_one_or_none()
 
-    def claim(self, session: Session, tags: list[str]) -> Resource | None:
+    def release(self, session: Session, resource_id: UUID, lease_token: UUID) -> Resource | None:
+        statement = (
+            update(Resource)
+            .where(Resource.id == resource_id, Resource.status == Status.BLOCKED, Resource.lease_token == lease_token)
+            .values(status=Status.FREE, lease_token=None, lease_owner=None, lease_expires_at=None)
+            .returning(Resource)
+        )
+        return session.execute(statement).scalar_one_or_none()
+
+    def renew(
+        self,
+        session: Session,
+        resource_id: UUID,
+        lease_token: UUID,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
+        statement = (
+            update(Resource)
+            .where(Resource.id == resource_id, Resource.status == Status.BLOCKED, Resource.lease_token == lease_token)
+            .values(lease_expires_at=lease_expires_at)
+            .returning(Resource)
+        )
+        return session.execute(statement).scalar_one_or_none()
+
+    def claim(
+        self,
+        session: Session,
+        tags: list[str],
+        lease_token: UUID,
+        lease_owner: str | None,
+        lease_expires_at: datetime,
+    ) -> Resource | None:
         statement = (
             select(Resource)
             .where(Resource.status == Status.FREE, Resource.tags.contains(tags))
@@ -105,8 +181,20 @@ class ResourceRepositoryPostgreSQL(ResourceRepository):
         resource = session.execute(statement).scalar_one_or_none()
         if resource:
             resource.status = Status.BLOCKED
+            resource.lease_token = lease_token
+            resource.lease_owner = lease_owner
+            resource.lease_expires_at = lease_expires_at
             session.flush()
         return resource
+
+    def release_expired_leases(self, session: Session, now: datetime) -> list[Resource]:
+        statement = (
+            update(Resource)
+            .where(Resource.status == Status.BLOCKED, Resource.lease_expires_at < now)
+            .values(status=Status.FREE, lease_token=None, lease_owner=None, lease_expires_at=None)
+            .returning(Resource)
+        )
+        return list(session.execute(statement).scalars().all())
 
 
 def create_resource_repository() -> ResourceRepository:

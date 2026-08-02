@@ -21,9 +21,12 @@ def test_claim_is_exclusive_until_resource_is_released():
 
     assert first_claim.status_code == 200
     assert first_claim.json()["id"] == resource_id
+    lease_token = first_claim.json()["lease_token"]
+    assert first_claim.json()["lease_owner"] is None
+    assert first_claim.json()["lease_expires_at"] is not None
     assert second_claim.status_code == 204
 
-    assert client.put(f"/resources/{resource_id}/release").status_code == 200
+    assert client.put(f"/resources/{resource_id}/release", json={"lease_token": lease_token}).status_code == 200
     assert client.delete(f"/resources/{resource_id}").status_code == 200
 
 
@@ -43,6 +46,7 @@ def test_concurrent_workers_cannot_claim_the_same_resource():
         responses = list(executor.map(lambda _: claim(), range(2)))
 
     assert sorted(response.status_code for response in responses) == [200, 204]
+    lease_token = next(response.json()["lease_token"] for response in responses if response.status_code == 200)
 
-    assert client.put(f"/resources/{resource_id}/release").status_code == 200
+    assert client.put(f"/resources/{resource_id}/release", json={"lease_token": lease_token}).status_code == 200
     assert client.delete(f"/resources/{resource_id}").status_code == 200

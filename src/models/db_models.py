@@ -29,6 +29,9 @@ class Resource(Base, ToDict):
     description: Mapped[str | None] = mapped_column(String(255))
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     status: Mapped[Status] = mapped_column(Enum(Status), default=Status.FREE)
+    lease_token: Mapped[UUID | None] = mapped_column(unique=True)
+    lease_owner: Mapped[str | None] = mapped_column(String(255))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     variables: Mapped[list[ResourceVariable]] = relationship(

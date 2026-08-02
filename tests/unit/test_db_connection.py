@@ -9,7 +9,7 @@ def test_configure_database_disposes_existing_engine_and_clears_cache():
     db_connection.reset_database_configuration()
     with patch("src.db_connection.create_engine", return_value=existing_engine) as create_engine:
         assert db_connection.get_engine() is existing_engine
-        db_connection.configure_database("postgresql+psycopg://user:pass@localhost:5432/resource_usage_app")
+        db_connection.configure_database("postgresql+psycopg://user:pass@localhost:5432/resource_coordinator")
 
     existing_engine.dispose.assert_called_once()
     create_engine.assert_called_once()

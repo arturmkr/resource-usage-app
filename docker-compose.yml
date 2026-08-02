@@ -1,3 +1,5 @@
+name: resource-coordinator
+
 services:
   app:
     build: .
@@ -6,9 +8,13 @@ services:
     environment:
       DB_HOSTNAME: db
       DB_PORT: 5432
-      DB_USERNAME: resource_usage_app
-      DB_PASSWORD: resource_usage_app
-      DB_NAME: resource_usage_app
+      DB_USERNAME: resource_coordinator
+      DB_PASSWORD: resource_coordinator
+      DB_NAME: resource_coordinator
+      APP_DEFAULT_LEASE_TTL_MINUTES: 240
+      APP_MAX_LEASE_TTL_MINUTES: 480
+      APP_LEASE_CLEANUP_INTERVAL_MINUTES: 10
+      APP_LEASE_CLEANUP_ENABLED: "true"
     depends_on:
       db:
         condition: service_healthy
@@ -16,17 +22,17 @@ services:
   db:
     image: postgres:17.6-alpine
     environment:
-      POSTGRES_USER: resource_usage_app
-      POSTGRES_PASSWORD: resource_usage_app
-      POSTGRES_DB: resource_usage_app
+      POSTGRES_USER: resource_coordinator
+      POSTGRES_PASSWORD: resource_coordinator
+      POSTGRES_DB: resource_coordinator
     volumes:
-      - resource-usage-postgres-data:/var/lib/postgresql/data
+      - resource-coordinator-postgres-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U resource_usage_app -d resource_usage_app"]
+      test: ["CMD-SHELL", "pg_isready -U resource_coordinator -d resource_coordinator"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  resource-usage-postgres-data:
+  resource-coordinator-postgres-data:

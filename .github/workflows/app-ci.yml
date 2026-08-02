@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: resource-usage-app
+  IMAGE_NAME: resource-coordinator
 
 jobs:
   test:
@@ -38,7 +38,7 @@ jobs:
           uv run ruff check .
 
       - name: Lint Helm chart
-        run: helm lint charts/resource-usage-app
+        run: helm lint charts/resource-coordinator
 
       - name: Test
         run: uv run pytest --cov --cov-report=term-missing --junitxml=test-results/junit.xml

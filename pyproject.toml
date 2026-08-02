@@ -1,5 +1,5 @@
 [project]
-name = "resource-usage-app"
+name = "resource-coordinator"
 version = "0.1.0"
 description = "API for coordinating exclusive access to shared resources"
 readme = "README.md"

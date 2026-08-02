@@ -9,3 +9,5 @@ class Status(StrEnum):
 class ResourceOperationType(StrEnum):
     BLOCK = "BLOCK"
     RELEASE = "RELEASE"
+    RENEW = "RENEW"
+    EXPIRE = "EXPIRE"
