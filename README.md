@@ -111,21 +111,17 @@ Requirements: Docker Compose, or Python 3.14 with `uv`.
 docker compose up --build
 ```
 
-The API is available at `http://localhost:10700`.
+Open the [dashboard](http://localhost:10700/ui/) or the [OpenAPI docs](http://localhost:10700/docs).
 
-OpenAPI docs:
-
-```text
-http://localhost:10700/docs
-```
-
-For local development:
+To run the application directly with Python, point the `DB_*` settings at a reachable PostgreSQL instance and run:
 
 ```bash
-docker compose up -d db
-uv sync --all-groups
 uv run python -m src.app
 ```
+
+## Web UI
+
+The NiceGUI dashboard is mounted at `/ui/` on the same server as the REST API. It calls the REST API over HTTP using the local application port. Set `API_BASE_URL` to override that address. The dashboard remembers lease tokens while the page is open. Copy a lease token if you plan to extend or release that lease from another session.
 
 ## Quality Checks
 

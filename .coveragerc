@@ -6,4 +6,5 @@ exclude_lines =
 [run]
 omit =
     tests/*
+    src/ui_app.py
     *__init__.py

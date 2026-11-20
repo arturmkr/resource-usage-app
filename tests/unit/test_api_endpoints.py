@@ -11,6 +11,18 @@ from src.resource_service import create_resource_service
 client = TestClient(app)
 
 
+def test_dashboard_and_api_docs_share_the_application():
+    with TestClient(app) as running_app:
+        dashboard = running_app.get("/ui/")
+        docs = running_app.get("/docs")
+
+    assert dashboard.status_code == 200
+    assert "<title>Resource Coordinator</title>" in dashboard.text
+    assert "/ui/_nicegui/" in dashboard.text
+    assert docs.status_code == 200
+    assert "Swagger UI" in docs.text
+
+
 def test_get_resource():
     mock_service = Mock()
     # Mock the service to return a valid ResourceOut object
